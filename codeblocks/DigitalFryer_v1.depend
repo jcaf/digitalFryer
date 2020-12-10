@@ -1,0 +1,34 @@
+# depslib dependency file v1.0
+1605810527 source:/run/media/jcaf/mydata/pleasure/PROYECTOS/ATMEL/C/Ronald/FIRMWARE/DigitalFryer_v1/fuse.c
+	<avr/io.h>
+
+1554773256 source:/run/media/jcaf/mydata/pleasure/PROYECTOS/ATMEL/C/Ronald/FIRMWARE/DigitalFryer_v1/lcdan/lcdan_aux.c
+	<avr/io.h>
+	<stdint.h>
+	"../system.h"
+	"lcdan.h"
+	"lcdan_aux.h"
+	<avr/pgmspace.h>
+
+1605803385 /run/media/jcaf/mydata/pleasure/PROYECTOS/ATMEL/C/Ronald/FIRMWARE/DigitalFryer_v1/system.h
+	<xc.h>
+	<avr/io.h>
+	<avr/interrupt.h>
+	<avr/pgmspace.h>
+	<avr/eeprom.h>
+	<util/delay.h>
+	<stdint.h>
+	<stdlib.h>
+	<string.h>
+
+1554914557 /run/media/jcaf/mydata/pleasure/PROYECTOS/ATMEL/C/Ronald/FIRMWARE/DigitalFryer_v1/lcdan/lcdan.h
+
+1556735372 /run/media/jcaf/mydata/pleasure/PROYECTOS/ATMEL/C/Ronald/FIRMWARE/DigitalFryer_v1/lcdan/lcdan_aux.h
+	"lcdan.h"
+
+1606351655 source:/run/media/jcaf/mydata/pleasure/PROYECTOS/ATMEL/C/Ronald/FIRMWARE/DigitalFryer_v1/lcdan/lcdan.c
+	<avr/io.h>
+	<stdint.h>
+	"../system.h"
+	"lcdan.h"
+

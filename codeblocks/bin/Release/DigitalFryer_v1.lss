@@ -1,0 +1,549 @@
+
+bin/Release/DigitalFryer_v1.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         00000416  00000000  00000000  00000094  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data         0000000e  00800060  00000416  000004aa  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  2 .fuse         00000002  00820000  00820000  000004b8  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  3 .comment      00000012  00000000  00000000  000004ba  2**0
+                  CONTENTS, READONLY
+  4 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000004cc  2**2
+                  CONTENTS, READONLY, OCTETS
+  5 .debug_info   000004e6  00000000  00000000  00000508  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  6 .debug_abbrev 000004a3  00000000  00000000  000009ee  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  7 .debug_line   0000001d  00000000  00000000  00000e91  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+  8 .debug_str    00000196  00000000  00000000  00000eae  2**0
+                  CONTENTS, READONLY, DEBUGGING, OCTETS
+
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	0c 94 2a 00 	jmp	0x54	; 0x54 <__ctors_end>
+   4:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+   8:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+   c:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  10:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  14:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  18:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  1c:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  20:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  24:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  28:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  2c:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  30:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  34:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  38:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  3c:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  40:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  44:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  48:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  4c:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+  50:	0c 94 3f 00 	jmp	0x7e	; 0x7e <__bad_interrupt>
+
+00000054 <__ctors_end>:
+  54:	11 24       	eor	r1, r1
+  56:	1f be       	out	0x3f, r1	; 63
+  58:	cf e5       	ldi	r28, 0x5F	; 95
+  5a:	d8 e0       	ldi	r29, 0x08	; 8
+  5c:	de bf       	out	0x3e, r29	; 62
+  5e:	cd bf       	out	0x3d, r28	; 61
+
+00000060 <__do_copy_data>:
+  60:	10 e0       	ldi	r17, 0x00	; 0
+  62:	a0 e6       	ldi	r26, 0x60	; 96
+  64:	b0 e0       	ldi	r27, 0x00	; 0
+  66:	e6 e1       	ldi	r30, 0x16	; 22
+  68:	f4 e0       	ldi	r31, 0x04	; 4
+  6a:	02 c0       	rjmp	.+4      	; 0x70 <__do_copy_data+0x10>
+  6c:	05 90       	lpm	r0, Z+
+  6e:	0d 92       	st	X+, r0
+  70:	ae 36       	cpi	r26, 0x6E	; 110
+  72:	b1 07       	cpc	r27, r17
+  74:	d9 f7       	brne	.-10     	; 0x6c <__do_copy_data+0xc>
+  76:	0e 94 ea 01 	call	0x3d4	; 0x3d4 <main>
+  7a:	0c 94 09 02 	jmp	0x412	; 0x412 <_exit>
+
+0000007e <__bad_interrupt>:
+  7e:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
+
+00000082 <lcdan_set_controlpins_and_datapins_outputs>:
+  82:	b9 9a       	sbi	0x17, 1	; 23
+  84:	b8 9a       	sbi	0x17, 0	; 23
+  86:	a3 9a       	sbi	0x14, 3	; 20
+  88:	a4 9a       	sbi	0x14, 4	; 20
+  8a:	a5 9a       	sbi	0x14, 5	; 20
+  8c:	a6 9a       	sbi	0x14, 6	; 20
+  8e:	a7 9a       	sbi	0x14, 7	; 20
+  90:	08 95       	ret
+
+00000092 <lcdan_set_datapins_inputs>:
+  92:	a4 98       	cbi	0x14, 4	; 20
+  94:	a5 98       	cbi	0x14, 5	; 20
+  96:	a6 98       	cbi	0x14, 6	; 20
+  98:	a7 98       	cbi	0x14, 7	; 20
+  9a:	08 95       	ret
+
+0000009c <lcdan_set_datapins_outputs>:
+  9c:	a4 9a       	sbi	0x14, 4	; 20
+  9e:	a5 9a       	sbi	0x14, 5	; 20
+  a0:	a6 9a       	sbi	0x14, 6	; 20
+  a2:	a7 9a       	sbi	0x14, 7	; 20
+  a4:	08 95       	ret
+
+000000a6 <lcdan_set_command_mode>:
+  a6:	c1 98       	cbi	0x18, 1	; 24
+  a8:	08 95       	ret
+
+000000aa <lcdan_set_data_mode>:
+  aa:	c1 9a       	sbi	0x18, 1	; 24
+  ac:	08 95       	ret
+
+000000ae <lcdan_set_write_mode>:
+  ae:	c0 98       	cbi	0x18, 0	; 24
+  b0:	08 95       	ret
+
+000000b2 <lcdan_set_read_mode>:
+  b2:	c0 9a       	sbi	0x18, 0	; 24
+  b4:	08 95       	ret
+
+000000b6 <lcdan_strobe_enable>:
+  b6:	85 e0       	ldi	r24, 0x05	; 5
+  b8:	8a 95       	dec	r24
+  ba:	f1 f7       	brne	.-4      	; 0xb8 <lcdan_strobe_enable+0x2>
+  bc:	00 00       	nop
+  be:	ab 9a       	sbi	0x15, 3	; 21
+  c0:	85 e0       	ldi	r24, 0x05	; 5
+  c2:	8a 95       	dec	r24
+  c4:	f1 f7       	brne	.-4      	; 0xc2 <lcdan_strobe_enable+0xc>
+  c6:	00 00       	nop
+  c8:	ab 98       	cbi	0x15, 3	; 21
+  ca:	85 e0       	ldi	r24, 0x05	; 5
+  cc:	8a 95       	dec	r24
+  ce:	f1 f7       	brne	.-4      	; 0xcc <lcdan_strobe_enable+0x16>
+  d0:	00 00       	nop
+  d2:	08 95       	ret
+
+000000d4 <lcdan_set_and_latch_4bits>:
+  d4:	87 ff       	sbrs	r24, 7
+  d6:	0c c0       	rjmp	.+24     	; 0xf0 <lcdan_set_and_latch_4bits+0x1c>
+  d8:	af 9a       	sbi	0x15, 7	; 21
+  da:	86 ff       	sbrs	r24, 6
+  dc:	0b c0       	rjmp	.+22     	; 0xf4 <lcdan_set_and_latch_4bits+0x20>
+  de:	ae 9a       	sbi	0x15, 6	; 21
+  e0:	85 ff       	sbrs	r24, 5
+  e2:	0a c0       	rjmp	.+20     	; 0xf8 <lcdan_set_and_latch_4bits+0x24>
+  e4:	ad 9a       	sbi	0x15, 5	; 21
+  e6:	84 ff       	sbrs	r24, 4
+  e8:	09 c0       	rjmp	.+18     	; 0xfc <lcdan_set_and_latch_4bits+0x28>
+  ea:	ac 9a       	sbi	0x15, 4	; 21
+  ec:	0c 94 5b 00 	jmp	0xb6	; 0xb6 <lcdan_strobe_enable>
+  f0:	af 98       	cbi	0x15, 7	; 21
+  f2:	f3 cf       	rjmp	.-26     	; 0xda <lcdan_set_and_latch_4bits+0x6>
+  f4:	ae 98       	cbi	0x15, 6	; 21
+  f6:	f4 cf       	rjmp	.-24     	; 0xe0 <lcdan_set_and_latch_4bits+0xc>
+  f8:	ad 98       	cbi	0x15, 5	; 21
+  fa:	f5 cf       	rjmp	.-22     	; 0xe6 <lcdan_set_and_latch_4bits+0x12>
+  fc:	ac 98       	cbi	0x15, 4	; 21
+  fe:	f6 cf       	rjmp	.-20     	; 0xec <lcdan_set_and_latch_4bits+0x18>
+
+00000100 <lcdan_set_and_latch_8bits>:
+ 100:	cf 93       	push	r28
+ 102:	c8 2f       	mov	r28, r24
+ 104:	0e 94 6a 00 	call	0xd4	; 0xd4 <lcdan_set_and_latch_4bits>
+ 108:	8c 2f       	mov	r24, r28
+ 10a:	82 95       	swap	r24
+ 10c:	80 7f       	andi	r24, 0xF0	; 240
+ 10e:	cf 91       	pop	r28
+ 110:	0c 94 6a 00 	jmp	0xd4	; 0xd4 <lcdan_set_and_latch_4bits>
+
+00000114 <lcdan_get_data>:
+ 114:	93 b3       	in	r25, 0x13	; 19
+ 116:	33 b3       	in	r19, 0x13	; 19
+ 118:	23 b3       	in	r18, 0x13	; 19
+ 11a:	83 b3       	in	r24, 0x13	; 19
+ 11c:	90 78       	andi	r25, 0x80	; 128
+ 11e:	30 74       	andi	r19, 0x40	; 64
+ 120:	93 2b       	or	r25, r19
+ 122:	20 72       	andi	r18, 0x20	; 32
+ 124:	92 2b       	or	r25, r18
+ 126:	80 71       	andi	r24, 0x10	; 16
+ 128:	89 2b       	or	r24, r25
+ 12a:	08 95       	ret
+
+0000012c <lcdan_test_busy>:
+ 12c:	cf 93       	push	r28
+ 12e:	df 93       	push	r29
+ 130:	0e 94 49 00 	call	0x92	; 0x92 <lcdan_set_datapins_inputs>
+ 134:	0e 94 53 00 	call	0xa6	; 0xa6 <lcdan_set_command_mode>
+ 138:	0e 94 59 00 	call	0xb2	; 0xb2 <lcdan_set_read_mode>
+ 13c:	85 e0       	ldi	r24, 0x05	; 5
+ 13e:	8a 95       	dec	r24
+ 140:	f1 f7       	brne	.-4      	; 0x13e <lcdan_test_busy+0x12>
+ 142:	00 00       	nop
+ 144:	ab 9a       	sbi	0x15, 3	; 21
+ 146:	85 e0       	ldi	r24, 0x05	; 5
+ 148:	8a 95       	dec	r24
+ 14a:	f1 f7       	brne	.-4      	; 0x148 <lcdan_test_busy+0x1c>
+ 14c:	00 00       	nop
+ 14e:	0e 94 8a 00 	call	0x114	; 0x114 <lcdan_get_data>
+ 152:	d8 2f       	mov	r29, r24
+ 154:	85 e0       	ldi	r24, 0x05	; 5
+ 156:	8a 95       	dec	r24
+ 158:	f1 f7       	brne	.-4      	; 0x156 <lcdan_test_busy+0x2a>
+ 15a:	00 00       	nop
+ 15c:	ab 98       	cbi	0x15, 3	; 21
+ 15e:	85 e0       	ldi	r24, 0x05	; 5
+ 160:	8a 95       	dec	r24
+ 162:	f1 f7       	brne	.-4      	; 0x160 <lcdan_test_busy+0x34>
+ 164:	00 00       	nop
+ 166:	ab 9a       	sbi	0x15, 3	; 21
+ 168:	85 e0       	ldi	r24, 0x05	; 5
+ 16a:	8a 95       	dec	r24
+ 16c:	f1 f7       	brne	.-4      	; 0x16a <lcdan_test_busy+0x3e>
+ 16e:	00 00       	nop
+ 170:	0e 94 8a 00 	call	0x114	; 0x114 <lcdan_get_data>
+ 174:	c8 2f       	mov	r28, r24
+ 176:	c2 95       	swap	r28
+ 178:	cf 70       	andi	r28, 0x0F	; 15
+ 17a:	d0 7f       	andi	r29, 0xF0	; 240
+ 17c:	cd 2b       	or	r28, r29
+ 17e:	85 e0       	ldi	r24, 0x05	; 5
+ 180:	8a 95       	dec	r24
+ 182:	f1 f7       	brne	.-4      	; 0x180 <lcdan_test_busy+0x54>
+ 184:	00 00       	nop
+ 186:	ab 98       	cbi	0x15, 3	; 21
+ 188:	85 e0       	ldi	r24, 0x05	; 5
+ 18a:	8a 95       	dec	r24
+ 18c:	f1 f7       	brne	.-4      	; 0x18a <lcdan_test_busy+0x5e>
+ 18e:	00 00       	nop
+ 190:	c7 fd       	sbrc	r28, 7
+ 192:	d8 cf       	rjmp	.-80     	; 0x144 <lcdan_test_busy+0x18>
+ 194:	0e 94 4e 00 	call	0x9c	; 0x9c <lcdan_set_datapins_outputs>
+ 198:	8c 2f       	mov	r24, r28
+ 19a:	df 91       	pop	r29
+ 19c:	cf 91       	pop	r28
+ 19e:	08 95       	ret
+
+000001a0 <lcdan_write_cmd>:
+ 1a0:	cf 93       	push	r28
+ 1a2:	c8 2f       	mov	r28, r24
+ 1a4:	0e 94 96 00 	call	0x12c	; 0x12c <lcdan_test_busy>
+ 1a8:	0e 94 53 00 	call	0xa6	; 0xa6 <lcdan_set_command_mode>
+ 1ac:	0e 94 57 00 	call	0xae	; 0xae <lcdan_set_write_mode>
+ 1b0:	8c 2f       	mov	r24, r28
+ 1b2:	cf 91       	pop	r28
+ 1b4:	0c 94 80 00 	jmp	0x100	; 0x100 <lcdan_set_and_latch_8bits>
+
+000001b8 <lcdan_write_data>:
+ 1b8:	cf 93       	push	r28
+ 1ba:	c8 2f       	mov	r28, r24
+ 1bc:	0e 94 96 00 	call	0x12c	; 0x12c <lcdan_test_busy>
+ 1c0:	0e 94 55 00 	call	0xaa	; 0xaa <lcdan_set_data_mode>
+ 1c4:	0e 94 57 00 	call	0xae	; 0xae <lcdan_set_write_mode>
+ 1c8:	8c 2f       	mov	r24, r28
+ 1ca:	cf 91       	pop	r28
+ 1cc:	0c 94 80 00 	jmp	0x100	; 0x100 <lcdan_set_and_latch_8bits>
+
+000001d0 <lcdan_init>:
+ 1d0:	0e 94 41 00 	call	0x82	; 0x82 <lcdan_set_controlpins_and_datapins_outputs>
+ 1d4:	8f e3       	ldi	r24, 0x3F	; 63
+ 1d6:	9c e9       	ldi	r25, 0x9C	; 156
+ 1d8:	01 97       	sbiw	r24, 0x01	; 1
+ 1da:	f1 f7       	brne	.-4      	; 0x1d8 <lcdan_init+0x8>
+ 1dc:	00 c0       	rjmp	.+0      	; 0x1de <lcdan_init+0xe>
+ 1de:	00 00       	nop
+ 1e0:	8f e3       	ldi	r24, 0x3F	; 63
+ 1e2:	9c e9       	ldi	r25, 0x9C	; 156
+ 1e4:	01 97       	sbiw	r24, 0x01	; 1
+ 1e6:	f1 f7       	brne	.-4      	; 0x1e4 <lcdan_init+0x14>
+ 1e8:	00 c0       	rjmp	.+0      	; 0x1ea <lcdan_init+0x1a>
+ 1ea:	00 00       	nop
+ 1ec:	8f e3       	ldi	r24, 0x3F	; 63
+ 1ee:	9c e9       	ldi	r25, 0x9C	; 156
+ 1f0:	01 97       	sbiw	r24, 0x01	; 1
+ 1f2:	f1 f7       	brne	.-4      	; 0x1f0 <lcdan_init+0x20>
+ 1f4:	00 c0       	rjmp	.+0      	; 0x1f6 <lcdan_init+0x26>
+ 1f6:	00 00       	nop
+ 1f8:	8f e3       	ldi	r24, 0x3F	; 63
+ 1fa:	9c e9       	ldi	r25, 0x9C	; 156
+ 1fc:	01 97       	sbiw	r24, 0x01	; 1
+ 1fe:	f1 f7       	brne	.-4      	; 0x1fc <lcdan_init+0x2c>
+ 200:	00 c0       	rjmp	.+0      	; 0x202 <lcdan_init+0x32>
+ 202:	00 00       	nop
+ 204:	8f e3       	ldi	r24, 0x3F	; 63
+ 206:	9c e9       	ldi	r25, 0x9C	; 156
+ 208:	01 97       	sbiw	r24, 0x01	; 1
+ 20a:	f1 f7       	brne	.-4      	; 0x208 <lcdan_init+0x38>
+ 20c:	00 c0       	rjmp	.+0      	; 0x20e <lcdan_init+0x3e>
+ 20e:	00 00       	nop
+ 210:	0e 94 53 00 	call	0xa6	; 0xa6 <lcdan_set_command_mode>
+ 214:	0e 94 57 00 	call	0xae	; 0xae <lcdan_set_write_mode>
+ 218:	80 e3       	ldi	r24, 0x30	; 48
+ 21a:	0e 94 6a 00 	call	0xd4	; 0xd4 <lcdan_set_and_latch_4bits>
+ 21e:	8f e1       	ldi	r24, 0x1F	; 31
+ 220:	9e e4       	ldi	r25, 0x4E	; 78
+ 222:	01 97       	sbiw	r24, 0x01	; 1
+ 224:	f1 f7       	brne	.-4      	; 0x222 <lcdan_init+0x52>
+ 226:	00 c0       	rjmp	.+0      	; 0x228 <lcdan_init+0x58>
+ 228:	00 00       	nop
+ 22a:	80 e3       	ldi	r24, 0x30	; 48
+ 22c:	0e 94 6a 00 	call	0xd4	; 0xd4 <lcdan_set_and_latch_4bits>
+ 230:	87 e5       	ldi	r24, 0x57	; 87
+ 232:	92 e0       	ldi	r25, 0x02	; 2
+ 234:	01 97       	sbiw	r24, 0x01	; 1
+ 236:	f1 f7       	brne	.-4      	; 0x234 <lcdan_init+0x64>
+ 238:	00 c0       	rjmp	.+0      	; 0x23a <lcdan_init+0x6a>
+ 23a:	00 00       	nop
+ 23c:	80 e3       	ldi	r24, 0x30	; 48
+ 23e:	0e 94 6a 00 	call	0xd4	; 0xd4 <lcdan_set_and_latch_4bits>
+ 242:	87 e5       	ldi	r24, 0x57	; 87
+ 244:	92 e0       	ldi	r25, 0x02	; 2
+ 246:	01 97       	sbiw	r24, 0x01	; 1
+ 248:	f1 f7       	brne	.-4      	; 0x246 <lcdan_init+0x76>
+ 24a:	00 c0       	rjmp	.+0      	; 0x24c <lcdan_init+0x7c>
+ 24c:	00 00       	nop
+ 24e:	80 e2       	ldi	r24, 0x20	; 32
+ 250:	0e 94 6a 00 	call	0xd4	; 0xd4 <lcdan_set_and_latch_4bits>
+ 254:	87 e5       	ldi	r24, 0x57	; 87
+ 256:	92 e0       	ldi	r25, 0x02	; 2
+ 258:	01 97       	sbiw	r24, 0x01	; 1
+ 25a:	f1 f7       	brne	.-4      	; 0x258 <lcdan_init+0x88>
+ 25c:	00 c0       	rjmp	.+0      	; 0x25e <lcdan_init+0x8e>
+ 25e:	00 00       	nop
+ 260:	88 e2       	ldi	r24, 0x28	; 40
+ 262:	0e 94 d0 00 	call	0x1a0	; 0x1a0 <lcdan_write_cmd>
+ 266:	88 e0       	ldi	r24, 0x08	; 8
+ 268:	0e 94 d0 00 	call	0x1a0	; 0x1a0 <lcdan_write_cmd>
+ 26c:	81 e0       	ldi	r24, 0x01	; 1
+ 26e:	0e 94 d0 00 	call	0x1a0	; 0x1a0 <lcdan_write_cmd>
+ 272:	86 e0       	ldi	r24, 0x06	; 6
+ 274:	0e 94 d0 00 	call	0x1a0	; 0x1a0 <lcdan_write_cmd>
+ 278:	8c e0       	ldi	r24, 0x0C	; 12
+ 27a:	0c 94 d0 00 	jmp	0x1a0	; 0x1a0 <lcdan_write_cmd>
+
+0000027e <lcdan_print_string>:
+ 27e:	cf 93       	push	r28
+ 280:	df 93       	push	r29
+ 282:	ec 01       	movw	r28, r24
+ 284:	89 91       	ld	r24, Y+
+ 286:	81 11       	cpse	r24, r1
+ 288:	03 c0       	rjmp	.+6      	; 0x290 <lcdan_print_string+0x12>
+ 28a:	df 91       	pop	r29
+ 28c:	cf 91       	pop	r28
+ 28e:	08 95       	ret
+ 290:	0e 94 dc 00 	call	0x1b8	; 0x1b8 <lcdan_write_data>
+ 294:	f7 cf       	rjmp	.-18     	; 0x284 <lcdan_print_string+0x6>
+
+00000296 <lcdan_print_PSTRstring>:
+ 296:	cf 93       	push	r28
+ 298:	df 93       	push	r29
+ 29a:	ec 01       	movw	r28, r24
+ 29c:	fe 01       	movw	r30, r28
+ 29e:	84 91       	lpm	r24, Z
+ 2a0:	88 23       	and	r24, r24
+ 2a2:	21 f0       	breq	.+8      	; 0x2ac <lcdan_print_PSTRstring+0x16>
+ 2a4:	0e 94 dc 00 	call	0x1b8	; 0x1b8 <lcdan_write_data>
+ 2a8:	21 96       	adiw	r28, 0x01	; 1
+ 2aa:	f8 cf       	rjmp	.-16     	; 0x29c <lcdan_print_PSTRstring+0x6>
+ 2ac:	df 91       	pop	r29
+ 2ae:	cf 91       	pop	r28
+ 2b0:	08 95       	ret
+
+000002b2 <lcdan_set_cursor>:
+ 2b2:	62 30       	cpi	r22, 0x02	; 2
+ 2b4:	3c f4       	brge	.+14     	; 0x2c4 <lcdan_set_cursor+0x12>
+ 2b6:	61 11       	cpse	r22, r1
+ 2b8:	03 c0       	rjmp	.+6      	; 0x2c0 <lcdan_set_cursor+0xe>
+ 2ba:	80 58       	subi	r24, 0x80	; 128
+ 2bc:	0c 94 d0 00 	jmp	0x1a0	; 0x1a0 <lcdan_write_cmd>
+ 2c0:	61 30       	cpi	r22, 0x01	; 1
+ 2c2:	11 f4       	brne	.+4      	; 0x2c8 <lcdan_set_cursor+0x16>
+ 2c4:	80 54       	subi	r24, 0x40	; 64
+ 2c6:	fa cf       	rjmp	.-12     	; 0x2bc <lcdan_set_cursor+0xa>
+ 2c8:	80 e8       	ldi	r24, 0x80	; 128
+ 2ca:	f8 cf       	rjmp	.-16     	; 0x2bc <lcdan_set_cursor+0xa>
+
+000002cc <lcdan_str_get_center_hor>:
+ 2cc:	fc 01       	movw	r30, r24
+ 2ce:	01 90       	ld	r0, Z+
+ 2d0:	00 20       	and	r0, r0
+ 2d2:	e9 f7       	brne	.-6      	; 0x2ce <lcdan_str_get_center_hor+0x2>
+ 2d4:	31 97       	sbiw	r30, 0x01	; 1
+ 2d6:	e8 1b       	sub	r30, r24
+ 2d8:	f9 0b       	sbc	r31, r25
+ 2da:	e0 31       	cpi	r30, 0x10	; 16
+ 2dc:	38 f4       	brcc	.+14     	; 0x2ec <lcdan_str_get_center_hor+0x20>
+ 2de:	80 e1       	ldi	r24, 0x10	; 16
+ 2e0:	90 e0       	ldi	r25, 0x00	; 0
+ 2e2:	8e 1b       	sub	r24, r30
+ 2e4:	91 09       	sbc	r25, r1
+ 2e6:	95 95       	asr	r25
+ 2e8:	87 95       	ror	r24
+ 2ea:	08 95       	ret
+ 2ec:	80 e0       	ldi	r24, 0x00	; 0
+ 2ee:	08 95       	ret
+
+000002f0 <lcdan_str_get_align_col>:
+ 2f0:	6f 3f       	cpi	r22, 0xFF	; 255
+ 2f2:	11 f4       	brne	.+4      	; 0x2f8 <lcdan_str_get_align_col+0x8>
+ 2f4:	0c 94 66 01 	jmp	0x2cc	; 0x2cc <lcdan_str_get_center_hor>
+ 2f8:	80 e0       	ldi	r24, 0x00	; 0
+ 2fa:	08 95       	ret
+
+000002fc <lcdan_str_lineformat_align>:
+ 2fc:	ef 92       	push	r14
+ 2fe:	ff 92       	push	r15
+ 300:	0f 93       	push	r16
+ 302:	1f 93       	push	r17
+ 304:	cf 93       	push	r28
+ 306:	8c 01       	movw	r16, r24
+ 308:	7b 01       	movw	r14, r22
+ 30a:	c4 2f       	mov	r28, r20
+ 30c:	fc 01       	movw	r30, r24
+ 30e:	10 8a       	std	Z+16, r1	; 0x10
+ 310:	40 e1       	ldi	r20, 0x10	; 16
+ 312:	50 e0       	ldi	r21, 0x00	; 0
+ 314:	60 e2       	ldi	r22, 0x20	; 32
+ 316:	70 e0       	ldi	r23, 0x00	; 0
+ 318:	0e 94 02 02 	call	0x404	; 0x404 <memset>
+ 31c:	c7 ff       	sbrs	r28, 7
+ 31e:	04 c0       	rjmp	.+8      	; 0x328 <lcdan_str_lineformat_align+0x2c>
+ 320:	c7 01       	movw	r24, r14
+ 322:	0e 94 66 01 	call	0x2cc	; 0x2cc <lcdan_str_get_center_hor>
+ 326:	c8 2f       	mov	r28, r24
+ 328:	f7 01       	movw	r30, r14
+ 32a:	01 90       	ld	r0, Z+
+ 32c:	00 20       	and	r0, r0
+ 32e:	e9 f7       	brne	.-6      	; 0x32a <lcdan_str_lineformat_align+0x2e>
+ 330:	31 97       	sbiw	r30, 0x01	; 1
+ 332:	ee 19       	sub	r30, r14
+ 334:	ff 09       	sbc	r31, r15
+ 336:	4e 2f       	mov	r20, r30
+ 338:	4c 0f       	add	r20, r28
+ 33a:	41 31       	cpi	r20, 0x11	; 17
+ 33c:	0c f0       	brlt	.+2      	; 0x340 <lcdan_str_lineformat_align+0x44>
+ 33e:	40 e1       	ldi	r20, 0x10	; 16
+ 340:	d8 01       	movw	r26, r16
+ 342:	ac 0f       	add	r26, r28
+ 344:	b1 1d       	adc	r27, r1
+ 346:	c7 fd       	sbrc	r28, 7
+ 348:	ba 95       	dec	r27
+ 34a:	80 e0       	ldi	r24, 0x00	; 0
+ 34c:	98 2f       	mov	r25, r24
+ 34e:	9c 0f       	add	r25, r28
+ 350:	94 17       	cp	r25, r20
+ 352:	34 f0       	brlt	.+12     	; 0x360 <lcdan_str_lineformat_align+0x64>
+ 354:	cf 91       	pop	r28
+ 356:	1f 91       	pop	r17
+ 358:	0f 91       	pop	r16
+ 35a:	ff 90       	pop	r15
+ 35c:	ef 90       	pop	r14
+ 35e:	08 95       	ret
+ 360:	97 01       	movw	r18, r14
+ 362:	28 0f       	add	r18, r24
+ 364:	31 1d       	adc	r19, r1
+ 366:	87 fd       	sbrc	r24, 7
+ 368:	3a 95       	dec	r19
+ 36a:	f9 01       	movw	r30, r18
+ 36c:	90 81       	ld	r25, Z
+ 36e:	9d 93       	st	X+, r25
+ 370:	8f 5f       	subi	r24, 0xFF	; 255
+ 372:	ec cf       	rjmp	.-40     	; 0x34c <lcdan_str_lineformat_align+0x50>
+
+00000374 <lcdan_str_lineformat_align_P>:
+ 374:	ff 92       	push	r15
+ 376:	0f 93       	push	r16
+ 378:	1f 93       	push	r17
+ 37a:	cf 93       	push	r28
+ 37c:	df 93       	push	r29
+ 37e:	cd b7       	in	r28, 0x3d	; 61
+ 380:	de b7       	in	r29, 0x3e	; 62
+ 382:	61 97       	sbiw	r28, 0x11	; 17
+ 384:	0f b6       	in	r0, 0x3f	; 63
+ 386:	f8 94       	cli
+ 388:	de bf       	out	0x3e, r29	; 62
+ 38a:	0f be       	out	0x3f, r0	; 63
+ 38c:	cd bf       	out	0x3d, r28	; 61
+ 38e:	8c 01       	movw	r16, r24
+ 390:	f4 2e       	mov	r15, r20
+ 392:	41 e1       	ldi	r20, 0x11	; 17
+ 394:	50 e0       	ldi	r21, 0x00	; 0
+ 396:	ce 01       	movw	r24, r28
+ 398:	01 96       	adiw	r24, 0x01	; 1
+ 39a:	0e 94 f3 01 	call	0x3e6	; 0x3e6 <strncpy_P>
+ 39e:	19 8a       	std	Y+17, r1	; 0x11
+ 3a0:	4f 2d       	mov	r20, r15
+ 3a2:	be 01       	movw	r22, r28
+ 3a4:	6f 5f       	subi	r22, 0xFF	; 255
+ 3a6:	7f 4f       	sbci	r23, 0xFF	; 255
+ 3a8:	c8 01       	movw	r24, r16
+ 3aa:	0e 94 7e 01 	call	0x2fc	; 0x2fc <lcdan_str_lineformat_align>
+ 3ae:	61 96       	adiw	r28, 0x11	; 17
+ 3b0:	0f b6       	in	r0, 0x3f	; 63
+ 3b2:	f8 94       	cli
+ 3b4:	de bf       	out	0x3e, r29	; 62
+ 3b6:	0f be       	out	0x3f, r0	; 63
+ 3b8:	cd bf       	out	0x3d, r28	; 61
+ 3ba:	df 91       	pop	r29
+ 3bc:	cf 91       	pop	r28
+ 3be:	1f 91       	pop	r17
+ 3c0:	0f 91       	pop	r16
+ 3c2:	ff 90       	pop	r15
+ 3c4:	08 95       	ret
+
+000003c6 <lcdan_str_lineformat_trimEOL3dots>:
+ 3c6:	fc 01       	movw	r30, r24
+ 3c8:	8e e2       	ldi	r24, 0x2E	; 46
+ 3ca:	85 87       	std	Z+13, r24	; 0x0d
+ 3cc:	86 87       	std	Z+14, r24	; 0x0e
+ 3ce:	87 87       	std	Z+15, r24	; 0x0f
+ 3d0:	10 8a       	std	Z+16, r1	; 0x10
+ 3d2:	08 95       	ret
+
+000003d4 <main>:
+ 3d4:	a2 9a       	sbi	0x14, 2	; 20
+ 3d6:	aa 9a       	sbi	0x15, 2	; 21
+ 3d8:	0e 94 e8 00 	call	0x1d0	; 0x1d0 <lcdan_init>
+ 3dc:	80 e6       	ldi	r24, 0x60	; 96
+ 3de:	90 e0       	ldi	r25, 0x00	; 0
+ 3e0:	0e 94 3f 01 	call	0x27e	; 0x27e <lcdan_print_string>
+ 3e4:	ff cf       	rjmp	.-2      	; 0x3e4 <main+0x10>
+
+000003e6 <strncpy_P>:
+ 3e6:	fb 01       	movw	r30, r22
+ 3e8:	dc 01       	movw	r26, r24
+ 3ea:	41 50       	subi	r20, 0x01	; 1
+ 3ec:	50 40       	sbci	r21, 0x00	; 0
+ 3ee:	48 f0       	brcs	.+18     	; 0x402 <__FUSE_REGION_LENGTH__+0x2>
+ 3f0:	05 90       	lpm	r0, Z+
+ 3f2:	0d 92       	st	X+, r0
+ 3f4:	00 20       	and	r0, r0
+ 3f6:	c9 f7       	brne	.-14     	; 0x3ea <strncpy_P+0x4>
+ 3f8:	01 c0       	rjmp	.+2      	; 0x3fc <strncpy_P+0x16>
+ 3fa:	1d 92       	st	X+, r1
+ 3fc:	41 50       	subi	r20, 0x01	; 1
+ 3fe:	50 40       	sbci	r21, 0x00	; 0
+ 400:	e0 f7       	brcc	.-8      	; 0x3fa <strncpy_P+0x14>
+ 402:	08 95       	ret
+
+00000404 <memset>:
+ 404:	dc 01       	movw	r26, r24
+ 406:	01 c0       	rjmp	.+2      	; 0x40a <memset+0x6>
+ 408:	6d 93       	st	X+, r22
+ 40a:	41 50       	subi	r20, 0x01	; 1
+ 40c:	50 40       	sbci	r21, 0x00	; 0
+ 40e:	e0 f7       	brcc	.-8      	; 0x408 <memset+0x4>
+ 410:	08 95       	ret
+
+00000412 <_exit>:
+ 412:	f8 94       	cli
+
+00000414 <__stop_program>:
+ 414:	ff cf       	rjmp	.-2      	; 0x414 <__stop_program>
