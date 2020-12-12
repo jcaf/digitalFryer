@@ -4,6 +4,8 @@
  *  Created on: Dec 3, 2020
  *      Author: jcaf
  */
+#include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
 #include "temperature.h"
 
