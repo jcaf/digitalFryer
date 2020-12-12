@@ -303,7 +303,6 @@ int main(void)
 					ikb_key_was_read(KB_LYOUT_RIGHT_UP);
 					//lcdan_print_string("8");
 				}
-
 			}
 		}
 		//-------------------
