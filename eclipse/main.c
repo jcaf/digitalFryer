@@ -26,19 +26,19 @@
  [jcaf@jcafpc ~]$ avrdude -c usbasp -B5 -p m32 -U lfuse:w:0xbf:m -U hfuse:w:0xcf:m
 
  4) GRABAR EL CODIGO FUENTE CON EL COMANDO ACOSTUMBRADO
- [root@JCAFPC Release]# avrdude -c usbasp -B5 -p m32 -U flash:w:atmega32Pulsonic.hex
- [root@JCAFPC Release]# avrdude -c usbasp -B1 -p m32 -V -U flash:w:atmega32Pulsonic.hex (SIN VERIFICAR)
+ [root@JCAFPC Release]# avrdude -c usbasp -B5 -p m32 -U flash:w:digitalFryer.hex
+ [root@JCAFPC Release]# avrdude -c usbasp -B1 -p m32 -V -U flash:w:digitalFryer.hex (SIN VERIFICAR)
  [jcaf@JCAFPC Release]$ avrdude -c usbasp -B5 -p m32 (ONLY A RESET)
 
  NUEVO
- [root@JCAFPC Release]# avrdude -c usbasp -B0.3 -p m32 -V -U flash:w:atmega328p.hex (MAS RAPIDO!)
+ [root@JCAFPC Release]# avrdude -c usbasp -B0.3 -p m32 -V -U flash:w:digitalFryer.hex (MAS RAPIDO!)
  Tambien puede ser sin -BX.. cuando ya esta bien configurado los fuses:
- [root@JCAFPC Release]# avrdude -c usbasp -p m32 -U flash:w:atmega328p.hex
+ [root@JCAFPC Release]# avrdude -c usbasp -p m32 -U flash:w:digitalFryer.hex
 
  5)
  8:50 a. m.
  GRABAR LA EEPROM
- [jcaf@jcafpc Release]$ avrdude -c usbasp -B4 -p m32 -V -U eeprom:w:atmega32Pulsonic.eep
+ [jcaf@jcafpc Release]$ avrdude -c usbasp -B4 -p m32 -V -U eeprom:w:digitalFryer.eep
 
  6) programar fuse (PRESERVANDO EEPROM)
 
@@ -56,6 +56,10 @@
  (ignorar el error de 0x3C... pues los 2 bits de mayor peso no estan implentados)
 
  25 en 2020: BRAYAN 0.35 - 0.6 A TODAS LAS TARJETAS, OK MOTOR UNIPOLAR
+
+ MODO DE FUNCIONAMIENTO:
+
+
  */
 
 #include <avr/io.h>
@@ -72,6 +76,7 @@
 #include "igDeteccFlama.h"
 #include "timing/timing.h"
 #include "utils/utils.h"
+#include "adc.h"
 
 //Temperaturas
 int16_t Temper_Precalentamiento = 10;
@@ -131,8 +136,28 @@ struct _fryer
 	int8_t kbStage;
 }fryer;
 
+void chispero(void);
+
+/*
+ * >> x=0:2*pi/16:2*pi
+ * >> y=(sin(x)*127)+127
+ */
+#define SENO_NUMPOINTS 16
+uint8_t seno[SENO_NUMPOINTS]={127, 176, 217, 244, 254, 244, 217, 176, 127, 78, 37, 10, 0, 10, 37, 78};
+
 int main(void)
 {
+	struct _basket leftBasket_temp;
+	struct _basket rightBasket_temp;
+	//
+	int8_t kb_mode = 0;
+	int8_t process_mode = 0;
+	//
+
+
+	//Tiempo Necesario para estabilizar la tarjeta
+//	__delay_ms(2000);//estabilizar tarjeta de deteccion
+
 	//Active pull-up
 	PinTo1(PORTWxKB_KEY0, PINxKB_KEY0);
 	PinTo1(PORTWxKB_KEY1, PINxKB_KEY1);
@@ -143,29 +168,143 @@ int main(void)
 	PinTo1(PORTWxKB_KEY6, PINxKB_KEY6);
 	PinTo1(PORTWxKB_KEY7, PINxKB_KEY7);
 	PinTo1(PORTWxKB_KEY8, PINxKB_KEY8);
+	__delay_ms(1);
 	ikb_init();
 
 	pinGetLevel_init(); //with Changed=flag activated at initialization
 
-	ConfigOutputPin(CONFIGIOxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
+	//
+	PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+	ConfigOutputPin(CONFIGIOxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+
 	PinTo0(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
+	ConfigOutputPin(CONFIGIOxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
 
-	ConfigOutputPin(CONFIGIOxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 	PinTo0(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
-
+	ConfigOutputPin(CONFIGIOxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
+	//
 	ConfigOutputPin(CONFIGIOxBUZZER, PINxBUZZER);
 	PinTo1(PORTWxBUZZER, PINxBUZZER);
-	_delay_ms(5);
+	__delay_ms(5);
 	PinTo0(PORTWxBUZZER, PINxBUZZER);
+
+	//PinTo1(PORTWxFLAME_DETECC, PINxFLAME_DETECC);//Active pull-up
+	//ConfigInputPin(PORTRxFLAME_DETECC, PINxFLAME_DETECC);
 
 	lcdan_init();
 	InitSPI_MASTER();
+
+
 	//
+	//ADC_init(ADC_MODE_SINGLE_END);
+
+
+	//Config to 10ms, antes de generar la onda senoidal
 	TCNT0 = 0x00;
 	TCCR0 = (1 << WGM01) | (1 << CS02) | (0 << CS01) | (1 << CS00); //CTC, PRES=1024
 	OCR0 = CTC_SET_OCR_BYTIME(10e-3, 1024); //TMR8-BIT @16MHz @PRES=1024-> BYTIME maximum = 16ms
+
+/*
+	//Config to 61uS para generar la onda senoidal
+	TCNT0 = 0x00;
+	TCCR0 = (1 << WGM01) | (0 << CS02) | (1 << CS01) | (0 << CS00); //CTC, PRES=8
+	OCR0 = CTC_SET_OCR_BYTIME(62.5E-6, 8); //TMR8-BIT @16MHz @PRES=1024-> BYTIME maximum = 16ms
+*/
+	//Config TRM2 PWM OC2 PIN (8-Bits)
+	//Prescaler = 1, No inverted OC2 pin
+	TCNT2 = 0;
+	OCR2 = 127;
+	TCCR2 = (1<< WGM21) |(1<< WGM20) | (1<< COM21) | (0<< COM20) | (0<< CS22) | (0<< CS21) | (1<< CS20);//NO Preescaling
+	ConfigOutputPin(CONFIGIOxOC2, PINxKB_OC2);
+
+	//
 	TIMSK |= (1 << OCIE0);
 	sei();
+
+	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+
+	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
+
+
+	/*
+	while (1)
+	{
+		PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+		_delay_ms(1000);
+		_delay_ms(1000);
+		PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+		_delay_ms(1000);
+		_delay_ms(1000);
+		_delay_ms(1000);
+		_delay_ms(1000);
+
+	}
+*/
+
+
+	#define FLAME_IS_ON 0
+	#define FLAME_IS_OFF 1
+
+/*
+while(1)
+{
+	pinGetLevel_job();
+	__delay_ms(20);
+
+	if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_FLAME_DETECC))
+	{
+		lcdan_set_cursor(0, 0);
+		//if has changed PGLEVEL_LYOUT_FLAME_DETECC, then read the level. After apply "pinGetLevel_clearChange"
+
+		if (pinGetLevel_level(PGLEVEL_LYOUT_FLAME_DETECC)== FLAME_IS_ON)
+		//if (PinRead(PORTRxFLAME_DETECC, PINxFLAME_DETECC) == FLAME_IS_ON)
+		{
+			lcdan_print_PSTRstring(PSTR("ON "));
+			//
+			PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+			//
+			__delay_ms(1500);
+			PinTo1(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
+			__delay_ms(2000);//en este tiempo sale con presion y puede generar un bajon en la deteccion
+		}
+		else
+		{
+			lcdan_print_PSTRstring(PSTR("OFF"));
+			PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+			//
+			PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
+
+			PinTo0(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
+		}
+
+		pinGetLevel_clearChange(PGLEVEL_LYOUT_FLAME_DETECC);
+	}
+
+}
+*/
+
+
+
+//while(1)
+//{
+//	flama = (ADC_read(ADC_CH_0)*5.0)/1023;
+//	lcdan_set_cursor(0, 0);
+//	if (flama > 2.0)
+//	{
+//		lcdan_print_PSTRstring(PSTR("ON "));
+//	}
+//	else
+//	{
+//		lcdan_print_PSTRstring(PSTR("OFF"));
+//	}
+//
+//	lcdan_set_cursor(0, 1);
+//	dtostrf(flama, 0,2, voltaje_flama);
+//	lcdan_print_string(voltaje_flama);
+//
+//	_delay_ms(100);
+//}
+
 	//
 	//ConfigOutputPin(DDRC,0);
 	int c = 0;
@@ -215,15 +354,14 @@ int main(void)
 						temper_mean_n_samples = 0x00;
 						temper_mean_val = 0x00;
 						//
-						MAX6675_convertIntTmptr2str_wformatPrint3dig(
-								temper_measured, temper_measured_str);
+						MAX6675_convertIntTmptr2str_wformatPrint3dig(temper_measured, temper_measured_str);
 					}
 					else
 					{
 						temper_mean_val += TmprCelsius;
 
-#define TEMPER_K_MULT_DIV_SHIFT 3//MULT_DIV_SHIFT -
-#define TEMPER_MEAN_SAMPLES (0x001<<TEMPER_K_MULT_DIV_SHIFT)//4
+						#define TEMPER_K_MULT_DIV_SHIFT 3//MULT_DIV_SHIFT -
+						#define TEMPER_MEAN_SAMPLES (0x001<<TEMPER_K_MULT_DIV_SHIFT)//4
 
 						if (++temper_mean_n_samples >= TEMPER_MEAN_SAMPLES)
 						{
@@ -234,8 +372,7 @@ int main(void)
 							temper_mean_val = 0x00;
 
 							//
-							MAX6675_convertIntTmptr2str_wformatPrint3dig(
-									temper_measured, temper_measured_str);
+							MAX6675_convertIntTmptr2str_wformatPrint3dig(temper_measured, temper_measured_str);
 						}
 					}
 				}
@@ -256,52 +393,53 @@ int main(void)
 					}
 					pinGetLevel_clearChange(PGLEVEL_LYOUT_SWONOFF);
 				}
+chispero();
 
 				ikb_job();
 				if (ikb_key_is_ready2read(KB_LYOUT_LEFT_STARTSTOP))
 				{
 					ikb_key_was_read(KB_LYOUT_LEFT_STARTSTOP);
-					//lcdan_print_string("0");
+					lcdan_print_string("0");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_LEFT_SLEEP))
 				{
 					ikb_key_was_read(KB_LYOUT_LEFT_SLEEP);
-					//lcdan_print_string("1");
+					lcdan_print_string("1");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_LEFT_DOWN))
 				{
 					ikb_key_was_read(KB_LYOUT_LEFT_DOWN);
-					//lcdan_print_string("2");
+					lcdan_print_string("2");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_LEFT_UP))
 				{
 					ikb_key_was_read(KB_LYOUT_LEFT_UP);
-					//lcdan_print_string("3");
+					lcdan_print_string("3");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 				{
 					ikb_key_was_read(KB_LYOUT_PROGRAM);
-					//lcdan_print_string("4");
+					lcdan_print_string("4");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_RIGHT_STARTSTOP))
 				{
 					ikb_key_was_read(KB_LYOUT_RIGHT_STARTSTOP);
-					//lcdan_print_string("5");
+					lcdan_print_string("8");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_RIGHT_SLEEP))
 				{
 					ikb_key_was_read(KB_LYOUT_RIGHT_SLEEP);
-					//lcdan_print_string("6");
+					lcdan_print_string("7");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_RIGHT_DOWN))
 				{
 					ikb_key_was_read(KB_LYOUT_RIGHT_DOWN);
-					//lcdan_print_string("7");
+					lcdan_print_string("5");
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_RIGHT_UP))
 				{
 					ikb_key_was_read(KB_LYOUT_RIGHT_UP);
-					//lcdan_print_string("8");
+					lcdan_print_string("6");
 				}
 			}
 		}
@@ -359,7 +497,7 @@ int main(void)
 			{
 				//Precalentamiento
 
-				if (temper_measured >= Temper_Precalentamiento)
+				if (1)//(temper_measured >= Temper_Precalentamiento)
 				{
 					PinTo1(PORTWxBUZZER, PINxBUZZER);
 					_delay_ms(50);
@@ -442,8 +580,55 @@ int main(void)
 
 	return 0;
 }
+
 ISR(TIMER0_COMP_vect)
 {
 	//PinToggle(PORTC,0);
 	isr_flag.f10ms = 1;
+}
+
+
+/*
+ //ISR para generar la onda senoidal
+ISR(TIMER0_COMP_vect)
+{
+//	PinToggle(PORTWxOC2,PINxKB_OC2);
+
+	 // Si se usa el flag de desborde del TOV2, entonces cada 4 Overflows se escribe el DC
+
+	//update D.C = OCR2
+
+	static int8_t c;
+
+	if ( ++c >= 16)
+	{
+		c = 0;
+	}
+	OCR2 = seno[c];
+}
+*/
+
+void chispero(void)
+{
+/*
+	if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_CHISPERO))
+	{
+		//lcdan_set_cursor(0, 1);
+		//change the flow
+		if (pinGetLevel_level(PGLEVEL_LYOUT_CHISPERO)== 0)	//active in low
+		{
+			PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+		}
+		else
+		{
+			PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+		}
+		pinGetLevel_clearChange(PGLEVEL_LYOUT_CHISPERO);
+	}
+*/
+}
+//
+void duty()
+{
+
 }

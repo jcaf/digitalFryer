@@ -135,6 +135,31 @@ Reglas:
         #define PINxKB_KEY4			5
 
 		//RIGHT Start/Stop/Timer
+		#define PORTWxKB_KEY8 		PORTD
+        #define PORTRxKB_KEY8 		PIND
+        #define CONFIGIOxKB_KEY8 	DDRD
+        #define PINxKB_KEY8			0
+
+		//RIGHT Sleep
+		#define PORTWxKB_KEY7 		PORTD
+        #define PORTRxKB_KEY7 		PIND
+        #define CONFIGIOxKB_KEY7 	DDRD
+        #define PINxKB_KEY7			1
+
+		//RIGHT Down
+		#define PORTWxKB_KEY5 		PORTA
+        #define PORTRxKB_KEY5 		PINA
+        #define CONFIGIOxKB_KEY5 	DDRA
+        #define PINxKB_KEY5			6
+
+		//RIGHT Up
+		#define PORTWxKB_KEY6 		PORTA
+        #define PORTRxKB_KEY6 		PINA
+        #define CONFIGIOxKB_KEY6 	DDRA
+        #define PINxKB_KEY6			7
+
+/*
+ * 	//RIGHT Start/Stop/Timer
 		#define PORTWxKB_KEY5 		PORTD
         #define PORTRxKB_KEY5 		PIND
         #define CONFIGIOxKB_KEY5 	DDRD
@@ -157,7 +182,8 @@ Reglas:
         #define PORTRxKB_KEY8 		PINA
         #define CONFIGIOxKB_KEY8 	DDRA
         #define PINxKB_KEY8			7
-
+ *
+ */
     #endif // iKEY
 
     void ikb_init(void);
