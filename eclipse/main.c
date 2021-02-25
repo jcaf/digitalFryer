@@ -115,7 +115,8 @@ struct _main_flag
 
 } main_flag = { 0 };
 
-int8_t blink_timer = 0;
+#define BLINK_TIMER_KMAX (500/10)//500ms/10ms de acceso
+int8_t blink_timer = BLINK_TIMER_KMAX;//0;
 
 int16_t temper_measured; //expose global
 //extern int16_t temper_measured;//expose global
@@ -568,7 +569,7 @@ chispero();
 					leftBasket_temp.cookCycle_time.sec = lefttime_k.sec;
 
 					//++--
-					blink_timer = 30;
+					blink_timer = BLINK_TIMER_KMAX;
 					main_flag.blink_toggle = 0;
 					main_flag.blink_isActive = 1;
 					//--++
@@ -608,7 +609,7 @@ chispero();
 					time_inc(&leftBasket_temp.cookCycle_time);
 
 					//
-					blink_timer = 30;
+					blink_timer = BLINK_TIMER_KMAX;
 					main_flag.blink_toggle = 1;
 
 				}
@@ -673,11 +674,12 @@ chispero();
 		//---------------------------
 		//++--Blinking zone
 
+
 		if (main_flag.blink_isActive == 1)
 		{
 			if (main_flag.f10ms)
 			{
-				if (++blink_timer >= 30)//300 ms
+				if (++blink_timer >= BLINK_TIMER_KMAX)//
 				{
 					blink_timer = 0x00;
 					//
@@ -685,6 +687,9 @@ chispero();
 					if (main_flag.blink_toggle == 1)
 					{
 						strcpy(str,"     ");
+						//
+						lcdan_set_cursor(0, 0);
+						lcdan_print_string(str);
 					}
 					else
 					{
@@ -696,10 +701,12 @@ chispero();
 						itoa(leftBasket_temp.cookCycle_time.sec, buff, 10);
 						paddingLeftwZeroes(buff, 2);
 						strcat(str,buff);
+						//
+						lcdan_set_cursor(0, 0);
+						lcdan_print_string(str);
 					}
 
-					lcdan_set_cursor(0, 0);
-					lcdan_print_string(str);
+
 				}
 			}
 			//--++Blinking zone
