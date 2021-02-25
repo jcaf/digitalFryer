@@ -111,12 +111,13 @@ struct _main_flag
 	unsigned f10ms :1;
 	unsigned blink_toggle: 1;
 	unsigned blink_isActive: 1;
-	unsigned __a:5;
+	unsigned blink_pass;
+	unsigned __a:4;
 
 } main_flag = { 0 };
 
-#define BLINK_TIMER_KMAX (500/10)//500ms/10ms de acceso
-int8_t blink_timer = BLINK_TIMER_KMAX;//0;
+#define BLINK_TIMER_KMAX (300/10)//500ms/10ms de acceso
+int8_t blink_timer = 0;//BLINK_TIMER_KMAX;//0;
 
 int16_t temper_measured; //expose global
 //extern int16_t temper_measured;//expose global
@@ -569,8 +570,8 @@ chispero();
 					leftBasket_temp.cookCycle_time.sec = lefttime_k.sec;
 
 					//++--
-					blink_timer = BLINK_TIMER_KMAX;
-					main_flag.blink_toggle = 0;
+					blink_timer = 0;//BLINK_TIMER_KMAX;
+					main_flag.blink_toggle = 1;
 					main_flag.blink_isActive = 1;
 					//--++
 
@@ -583,7 +584,7 @@ chispero();
 					key_prop.uFlag.f.reptt = 1;
 					key_prop.numGroup = 1;
 					key_prop.repttTh.breakTime = (uint16_t) 300.0 / KB_PERIODIC_ACCESS;
-					key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
+					key_prop.repttTh.period = (uint16_t) 300.0 / KB_PERIODIC_ACCESS;
 
 					ikb_setKeyProp(KB_LYOUT_LEFT_DOWN, key_prop);
 					ikb_setKeyProp(KB_LYOUT_LEFT_UP, key_prop);
@@ -609,8 +610,9 @@ chispero();
 					time_inc(&leftBasket_temp.cookCycle_time);
 
 					//
-					blink_timer = BLINK_TIMER_KMAX;
-					main_flag.blink_toggle = 1;
+					blink_timer = 0;
+					main_flag.blink_toggle = 0;
+					main_flag.blink_pass = 1;
 
 				}
 			}
@@ -670,11 +672,9 @@ chispero();
 		}
 
 
-
+		/*
 		//---------------------------
 		//++--Blinking zone
-
-
 		if (main_flag.blink_isActive == 1)
 		{
 			if (main_flag.f10ms)
@@ -710,8 +710,51 @@ chispero();
 				}
 			}
 			//--++Blinking zone
+			*/
 
-		}
+			if (main_flag.blink_isActive == 1)
+			{
+				if (main_flag.blink_pass == 1)
+				{
+					if (main_flag.blink_toggle == 1)
+					{
+						strcpy(str,"     ");
+						//
+						lcdan_set_cursor(0, 0);
+						lcdan_print_string(str);
+					}
+					else
+					{
+						//print Left time mm:ss
+						itoa(leftBasket_temp.cookCycle_time.min, buff,10);
+						paddingLeftwBlanks(buff, 2);
+						strcpy(str,buff);
+						strcat(str,":");
+						itoa(leftBasket_temp.cookCycle_time.sec, buff, 10);
+						paddingLeftwZeroes(buff, 2);
+						strcat(str,buff);
+						//
+						lcdan_set_cursor(0, 0);
+						lcdan_print_string(str);
+					}
+					main_flag.blink_pass = 0;
+				}
+
+				if (main_flag.f10ms)
+				{
+					if (++blink_timer >= BLINK_TIMER_KMAX)//
+					{
+						blink_timer = 0x00;
+						//
+						main_flag.blink_toggle = !main_flag.blink_toggle;
+						main_flag.blink_pass = 1;
+					}
+				}
+			}
+
+
+
+
 
 
 		//---------------------------
