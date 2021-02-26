@@ -111,13 +111,15 @@ struct _main_flag
 	unsigned f10ms :1;
 	unsigned blink_toggle: 1;
 	unsigned blink_isActive: 1;
-	unsigned blink_pass;
+	unsigned blink_bypass;//print direct without wait timer
 	unsigned __a:4;
 
 } main_flag = { 0 };
 
-#define BLINK_TIMER_KMAX (300/10)//500ms/10ms de acceso
-int8_t blink_timer = 0;//BLINK_TIMER_KMAX;//0;
+#define BLINK_TOGGLE_BLANK 1
+#define BLINK_BYPASS_TIMER 1
+#define BLINK_TIMER_KMAX (400/10)//Xms/10ms de acceso
+int8_t blink_timer = 0;
 
 int16_t temper_measured; //expose global
 //extern int16_t temper_measured;//expose global
@@ -565,36 +567,31 @@ chispero();
 					fryer.leftBasket.bf.cookCycle_on = 0;//off
 
 					//solo muestra blinkeando el valor...
-
 					leftBasket_temp.cookCycle_time.min = lefttime_k.min;
 					leftBasket_temp.cookCycle_time.sec = lefttime_k.sec;
 
 					//++--
-					blink_timer = 0;//BLINK_TIMER_KMAX;
-					main_flag.blink_toggle = 1;
+					blink_timer = 0x00;
+					main_flag.blink_toggle = BLINK_TOGGLE_BLANK;
 					main_flag.blink_isActive = 1;
 					//--++
 
-					//change layout
-
+					//change keyboard layout
 					struct _key_prop key_prop = {0};
-
 					key_prop = propEmpty;
 					key_prop.uFlag.f.onKeyPressed = 1;
 					key_prop.uFlag.f.reptt = 1;
 					key_prop.numGroup = 1;
-					key_prop.repttTh.breakTime = (uint16_t) 300.0 / KB_PERIODIC_ACCESS;
-					key_prop.repttTh.period = (uint16_t) 300.0 / KB_PERIODIC_ACCESS;
-
+					key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
+					key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
 					ikb_setKeyProp(KB_LYOUT_LEFT_DOWN, key_prop);
 					ikb_setKeyProp(KB_LYOUT_LEFT_UP, key_prop);
 					//
 
 					kb_mode = EDIT_COOKCYCLE;
 				}
-
 			}
-			if (kb_mode == EDIT_COOKCYCLE)
+			else if (kb_mode == EDIT_COOKCYCLE)
 			{
 				if (ikb_key_is_ready2read(KB_LYOUT_LEFT_DOWN))
 				{
@@ -610,10 +607,10 @@ chispero();
 					time_inc(&leftBasket_temp.cookCycle_time);
 
 					//
-					blink_timer = 0;
-					main_flag.blink_toggle = 0;
-					main_flag.blink_pass = 1;
-
+					blink_timer = 0x00;
+					main_flag.blink_toggle = !BLINK_TOGGLE_BLANK;
+					main_flag.blink_bypass = BLINK_BYPASS_TIMER;
+					//
 				}
 			}
 
@@ -714,14 +711,11 @@ chispero();
 
 			if (main_flag.blink_isActive == 1)
 			{
-				if (main_flag.blink_pass == 1)
+				if (main_flag.blink_bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
 				{
-					if (main_flag.blink_toggle == 1)
+					if (main_flag.blink_toggle == BLINK_TOGGLE_BLANK)
 					{
 						strcpy(str,"     ");
-						//
-						lcdan_set_cursor(0, 0);
-						lcdan_print_string(str);
 					}
 					else
 					{
@@ -733,11 +727,13 @@ chispero();
 						itoa(leftBasket_temp.cookCycle_time.sec, buff, 10);
 						paddingLeftwZeroes(buff, 2);
 						strcat(str,buff);
-						//
-						lcdan_set_cursor(0, 0);
-						lcdan_print_string(str);
+						//lcdan_set_cursor(0, 0);
+						//lcdan_print_string(str);
 					}
-					main_flag.blink_pass = 0;
+					lcdan_set_cursor(0, 0);
+					lcdan_print_string(str);
+					//
+					main_flag.blink_bypass = 0;
 				}
 
 				if (main_flag.f10ms)
@@ -747,14 +743,10 @@ chispero();
 						blink_timer = 0x00;
 						//
 						main_flag.blink_toggle = !main_flag.blink_toggle;
-						main_flag.blink_pass = 1;
+						main_flag.blink_bypass = BLINK_BYPASS_TIMER;
 					}
 				}
 			}
-
-
-
-
 
 
 		//---------------------------
