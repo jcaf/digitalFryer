@@ -134,7 +134,8 @@ struct _basket
 	struct _basket_bf
 	{
 		unsigned cookCycle_on:1;
-		unsigned __a;
+		unsigned cookCycle_dipshow:1;
+		unsigned __a:6;
 
 	}bf;
 };
@@ -154,6 +155,19 @@ void chispero(void);
  */
 #define SENO_NUMPOINTS 16
 uint8_t seno[SENO_NUMPOINTS]={127, 176, 217, 244, 254, 244, 217, 176, 127, 78, 37, 10, 0, 10, 37, 78};
+
+//build to print Left time mm:ss
+void build_cookCycle_string(struct _basket *basket, char *str)
+{
+	char buff[20];
+	itoa(basket->cookCycle_time.min, buff,10);
+	paddingLeftwBlanks(buff, 2);
+	strcpy(str,buff);
+	strcat(str,":");
+	itoa(basket->cookCycle_time.sec, buff, 10);
+	paddingLeftwZeroes(buff, 2);
+	strcat(str,buff);
+}
 
 int main(void)
 {
@@ -467,32 +481,26 @@ chispero();
 				fryer.leftBasket.cookCycle_time.sec = lefttime_k.sec;
 				fryer.rightBasket.cookCycle_time.min = righttime_k.min;
 				fryer.rightBasket.cookCycle_time.sec = righttime_k.sec;
-
-				//print Left time
-				//build left mm:ss
-				itoa(fryer.leftBasket.cookCycle_time.min, buff,10);
-				paddingLeftwBlanks(buff, 2);
-				strcpy(str,buff);
-				strcat(str,":");
-				itoa(fryer.leftBasket.cookCycle_time.sec, buff, 10);
-				paddingLeftwZeroes(buff, 2);
-				strcat(str,buff);
-				lcdan_set_cursor(0, 0);
-				lcdan_print_string(str);
+				//
+				fryer.leftBasket.bf.cookCycle_dipshow = 1;
+				fryer.rightBasket.bf.cookCycle_dipshow = 1;
 				//
 
-				//print Right time
-				//build left mm:ss
-				itoa(fryer.rightBasket.cookCycle_time.min, buff,10);
-				paddingLeftwBlanks(buff, 2);
-				strcpy(str,buff);
-				strcat(str,":");
-				itoa(fryer.rightBasket.cookCycle_time.sec, buff, 10);
-				paddingLeftwZeroes(buff, 2);
-				strcat(str,buff);
-				lcdan_set_cursor(0x0B, 0);//xx:xx
-				lcdan_print_string(str);
-				//
+				//print Left time mm:ss
+				if (fryer.leftBasket.bf.cookCycle_dipshow)
+				{
+					build_cookCycle_string(&fryer.leftBasket, str);
+					lcdan_set_cursor(0, 0);
+					lcdan_print_string(str);
+				}
+
+				//print Right time mm:ss
+				if (fryer.rightBasket.bf.cookCycle_dipshow)
+				{
+					build_cookCycle_string(&fryer.rightBasket, str);
+					lcdan_set_cursor(0x0B, 0);//xx:xx
+					lcdan_print_string(str);
+				}
 
 				igDeteccFlama_resetJob();
 				sm0++;
@@ -563,8 +571,7 @@ chispero();
 					ikb_key_was_read(KB_LYOUT_LEFT_DOWN);
 					ikb_key_was_read(KB_LYOUT_LEFT_UP);
 
-					//
-					fryer.leftBasket.bf.cookCycle_on = 0;//off
+					fryer.leftBasket.bf.cookCycle_dipshow = 0;
 
 					//solo muestra blinkeando el valor...
 					leftBasket_temp.cookCycle_time.min = lefttime_k.min;
@@ -598,6 +605,11 @@ chispero();
 					ikb_key_was_read(KB_LYOUT_LEFT_DOWN);
 
 					time_dec(&leftBasket_temp.cookCycle_time);
+					//
+					blink_timer = 0x00;
+					main_flag.blink_toggle = !BLINK_TOGGLE_BLANK;
+					main_flag.blink_bypass = BLINK_BYPASS_TIMER;
+					//
 
 				}
 				if (ikb_key_is_ready2read(KB_LYOUT_LEFT_UP))
@@ -624,17 +636,14 @@ chispero();
 						fryer.leftBasket.cookCycle_timer = 0;
 
 						time_dec(&fryer.leftBasket.cookCycle_time);
-						//
+
 						//print Left time mm:ss
-						itoa(fryer.leftBasket.cookCycle_time.min, buff,10);
-						paddingLeftwBlanks(buff, 2);
-						strcpy(str,buff);
-						strcat(str,":");
-						itoa(fryer.leftBasket.cookCycle_time.sec, buff, 10);
-						paddingLeftwZeroes(buff, 2);
-						strcat(str,buff);
-						lcdan_set_cursor(0, 0);
-						lcdan_print_string(str);
+						if (fryer.leftBasket.bf.cookCycle_dipshow)
+						{
+							build_cookCycle_string(&fryer.leftBasket, str);
+							lcdan_set_cursor(0, 0);
+							lcdan_print_string(str);
+						}
 					}
 				}
 			}
@@ -649,16 +658,13 @@ chispero();
 						time_dec(&fryer.rightBasket.cookCycle_time);
 						//
 						//print Right time mm:ss
-						itoa(fryer.rightBasket.cookCycle_time.min, buff,10);
-						paddingLeftwBlanks(buff, 2);
-						strcpy(str,buff);
-						strcat(str,":");
-						itoa(fryer.rightBasket.cookCycle_time.sec, buff, 10);
-						paddingLeftwZeroes(buff, 2);
-						strcat(str,buff);
-						lcdan_set_cursor(0x0B, 0);//xx:xx
-						lcdan_print_string(str);
-						//
+						if (fryer.rightBasket.bf.cookCycle_dipshow)
+						{
+							build_cookCycle_string(&fryer.rightBasket, str);
+							lcdan_set_cursor(0x0B, 0);//xx:xx
+							lcdan_print_string(str);
+
+						}
 					}
 				}
 			}
@@ -669,11 +675,25 @@ chispero();
 		}
 
 
-		/*
-		//---------------------------
 		//++--Blinking zone
 		if (main_flag.blink_isActive == 1)
 		{
+			if (main_flag.blink_bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
+			{
+				if (main_flag.blink_toggle == BLINK_TOGGLE_BLANK)
+				{
+					strcpy(str,"     ");
+				}
+				else
+				{
+					build_cookCycle_string(&leftBasket_temp, str);//puede ser un puntero que apunte al dato a construir
+				}
+				lcdan_set_cursor(0, 0);
+				lcdan_print_string(str);
+				//
+				main_flag.blink_bypass = 0;
+			}
+
 			if (main_flag.f10ms)
 			{
 				if (++blink_timer >= BLINK_TIMER_KMAX)//
@@ -681,72 +701,22 @@ chispero();
 					blink_timer = 0x00;
 					//
 					main_flag.blink_toggle = !main_flag.blink_toggle;
-					if (main_flag.blink_toggle == 1)
-					{
-						strcpy(str,"     ");
-						//
-						lcdan_set_cursor(0, 0);
-						lcdan_print_string(str);
-					}
-					else
-					{
-						//print Left time mm:ss
-						itoa(leftBasket_temp.cookCycle_time.min, buff,10);
-						paddingLeftwBlanks(buff, 2);
-						strcpy(str,buff);
-						strcat(str,":");
-						itoa(leftBasket_temp.cookCycle_time.sec, buff, 10);
-						paddingLeftwZeroes(buff, 2);
-						strcat(str,buff);
-						//
-						lcdan_set_cursor(0, 0);
-						lcdan_print_string(str);
-					}
-
-
+					main_flag.blink_bypass = BLINK_BYPASS_TIMER;
 				}
 			}
-			//--++Blinking zone
-			*/
+		}
 
-			if (main_flag.blink_isActive == 1)
+		//Timer for return to display
+		if (timer)
+		{
+			if (timer > K)
 			{
-				if (main_flag.blink_bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
-				{
-					if (main_flag.blink_toggle == BLINK_TOGGLE_BLANK)
-					{
-						strcpy(str,"     ");
-					}
-					else
-					{
-						//print Left time mm:ss
-						itoa(leftBasket_temp.cookCycle_time.min, buff,10);
-						paddingLeftwBlanks(buff, 2);
-						strcpy(str,buff);
-						strcat(str,":");
-						itoa(leftBasket_temp.cookCycle_time.sec, buff, 10);
-						paddingLeftwZeroes(buff, 2);
-						strcat(str,buff);
-						//lcdan_set_cursor(0, 0);
-						//lcdan_print_string(str);
-					}
-					lcdan_set_cursor(0, 0);
-					lcdan_print_string(str);
-					//
-					main_flag.blink_bypass = 0;
-				}
+				//REGRESA EL DISPLAY AL CONTADOR
 
-				if (main_flag.f10ms)
-				{
-					if (++blink_timer >= BLINK_TIMER_KMAX)//
-					{
-						blink_timer = 0x00;
-						//
-						main_flag.blink_toggle = !main_flag.blink_toggle;
-						main_flag.blink_bypass = BLINK_BYPASS_TIMER;
-					}
-				}
 			}
+		}
+
+		//
 
 
 		//---------------------------
