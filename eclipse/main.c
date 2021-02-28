@@ -100,6 +100,8 @@ void solenoideGasPiloto_off(void)
 {
 }
 
+int16_t temper_measured; //expose global
+
 volatile struct _isr_flag
 {
 	unsigned f10ms :1;
@@ -119,35 +121,6 @@ struct _main_flag
 #define BLINK_TOGGLE_BLANK 1
 #define BLINK_BYPASS_TIMER 1
 #define BLINK_TIMER_KMAX (400/10)//Xms/10ms de acceso
-//int8_t fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0;
-
-int16_t temper_measured; //expose global
-//extern int16_t temper_measured;//expose global
-
-/*
-struct _basket
-{
-	struct _t cookCycle_time;
-
-	int8_t cookCycle_timer;		//timer decrement
-	int8_t cookCycle_timeout;	//
-	int8_t fryer.leftBasket.cookCycle.editcycle.blink.timerBlink;
-
-	struct _basket_bf
-	{
-		unsigned cookCycle_on:1;
-		unsigned cookCycle_dipshow:1;
-		//
-		unsigned blink_toggle: 1;
-		unsigned blink_isActive: 1;
-		unsigned blink_bypass:1;		//print direct without wait timer
-		//
-		unsigned __a;
-
-	}bf;
-};
-*/
-
 #define EDITCYCLE_TIMERTIMEOUT_K (5000/10)//5000ms/10ms
 
 enum E_KB_MODE
@@ -176,17 +149,6 @@ struct _basket
 		{
 			int16_t timerTimeout;
 
-//			struct _timeout
-//			{
-//				int8_t timerTimeout;
-//
-//				struct _bf_timeout
-//				{
-//					unsigned
-//				}bf;
-//
-//			}timeout;
-
 			struct _blink
 			{
 				struct _bf_blink
@@ -204,11 +166,8 @@ struct _basket
 		}editcycle;
 		//----------------------------
 
-
 	}cookCycle;
-
 };
-
 
 struct _fryer
 {
@@ -228,16 +187,57 @@ void chispero(void);
 uint8_t seno[SENO_NUMPOINTS]={127, 176, 217, 244, 254, 244, 217, 176, 127, 78, 37, 10, 0, 10, 37, 78};
 
 //build to print Left time mm:ss
-void build_cookCycle_string(struct _basket *basket, char *str)
+void build_cookCycle_string(struct _t *t, char *str)
 {
 	char buff[20];
-	itoa(basket->cookCycle.time.min, buff,10);
+	itoa(t->min, buff,10);
 	paddingLeftwBlanks(buff, 2);
 	strcpy(str,buff);
 	strcat(str,":");
-	itoa(basket->cookCycle.time.sec, buff, 10);
+	itoa(t->sec, buff, 10);
 	paddingLeftwZeroes(buff, 2);
 	strcat(str,buff);
+}
+
+void kbmode_default(void)
+{
+	struct _key_prop prop = {0};
+	prop = propEmpty;
+	prop.uFlag.f.onKeyPressed = 1;
+	for (int i=0; i< KB_NUM_KEYS; i++)
+		{ikb_setKeyProp(i, prop);}
+}
+void kbmode_edit_cookCycle(void)
+{
+	struct _key_prop key_prop = {0};
+	key_prop = propEmpty;
+	key_prop.uFlag.f.onKeyPressed = 1;
+	key_prop.uFlag.f.reptt = 1;
+	key_prop.numGroup = 1;
+	key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
+	key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
+	ikb_setKeyProp(KB_LYOUT_LEFT_DOWN, key_prop);
+	ikb_setKeyProp(KB_LYOUT_LEFT_UP, key_prop);
+}
+
+void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *TcookCycle_setPoint_current, struct _t *Tcookcycle_timingrunning)
+{
+	int16_t TcookCycle_toUpdate_inSecs = (TcookCycle_setPoint_toUpdate->min*60) + TcookCycle_setPoint_toUpdate->sec;
+	int16_t TcookCycle_setPoint_inSecs = (TcookCycle_setPoint_current->min*60) + TcookCycle_setPoint_current->sec;
+	int16_t Trunning_inSecs = (Tcookcycle_timingrunning->min*60) + Tcookcycle_timingrunning->sec;
+
+	int32_t diff_inSec = TcookCycle_toUpdate_inSecs - (TcookCycle_setPoint_inSecs - Trunning_inSecs);
+
+	if ( diff_inSec <= 0)//Trunc
+	{
+		Tcookcycle_timingrunning->min = 0;
+		Tcookcycle_timingrunning->sec = 0;
+	}
+	else
+	{
+		Tcookcycle_timingrunning->min = (int) (diff_inSec / 60.0);
+		Tcookcycle_timingrunning->sec = (int)(diff_inSec % 60);//modulo;
+	}
 }
 
 int main(void)
@@ -246,9 +246,7 @@ int main(void)
 	struct _basket rightBasket_temp;
 	//
 	int8_t kb_mode = 0;
-	int8_t process_mode = 0;
-	//
-
+	//int8_t process_mode = 0;
 
 	//Tiempo Necesario para estabilizar la tarjeta
 //	__delay_ms(2000);//estabilizar tarjeta de deteccion
@@ -288,11 +286,8 @@ int main(void)
 
 	lcdan_init();
 	InitSPI_MASTER();
-
-
 	//
 	//ADC_init(ADC_MODE_SINGLE_END);
-
 
 	//Config to 10ms, antes de generar la onda senoidal
 	TCNT0 = 0x00;
@@ -320,7 +315,6 @@ int main(void)
 
 	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 
-
 	/*
 	while (1)
 	{
@@ -332,10 +326,8 @@ int main(void)
 		_delay_ms(1000);
 		_delay_ms(1000);
 		_delay_ms(1000);
-
 	}
 */
-
 
 	#define FLAME_IS_ON 0
 	#define FLAME_IS_OFF 1
@@ -418,8 +410,7 @@ while(1)
 	struct _t lefttime_k = { 3, 0 };    //mm:ss
 	struct _t righttime_k = { 3, 0 };    //mm:ss
 
-	char str[10];
-	char buff[10];
+	char str[20];
 
 	while (1)
 	{
@@ -560,7 +551,7 @@ chispero();
 				//print Left time mm:ss
 				if (fryer.leftBasket.cookCycle.bf.displayShow)
 				{
-					build_cookCycle_string(&fryer.leftBasket, str);
+					build_cookCycle_string(&fryer.leftBasket.cookCycle.time, str);
 					lcdan_set_cursor(0, 0);
 					lcdan_print_string(str);
 				}
@@ -568,7 +559,7 @@ chispero();
 				//print Right time mm:ss
 				if (fryer.rightBasket.cookCycle.bf.displayShow)
 				{
-					build_cookCycle_string(&fryer.rightBasket, str);
+					build_cookCycle_string(&fryer.rightBasket.cookCycle.time, str);
 					lcdan_set_cursor(0x0B, 0);//xx:xx
 					lcdan_print_string(str);
 				}
@@ -601,12 +592,11 @@ chispero();
 
 					fryer.leftBasket.cookCycle.timerCook = 0x00;
 					fryer.rightBasket.cookCycle.timerCook = 0x00;
-
-					sm0++;
-
 					//
 					fryer.leftBasket.cookCycle.bf.on = 1;
 					fryer.rightBasket.cookCycle.bf.on = 1;
+
+					sm0++;
 				}
 			}
 			else if (sm0 == 3)
@@ -624,16 +614,12 @@ chispero();
 				}
 			}
 
-
-
-
 			if (kb_mode == DEFAULT)
 			{
 				if ( (ikb_key_is_ready2read(KB_LYOUT_LEFT_DOWN)) || (ikb_key_is_ready2read(KB_LYOUT_LEFT_UP)) )
 				{
 					ikb_key_was_read(KB_LYOUT_LEFT_DOWN);
 					ikb_key_was_read(KB_LYOUT_LEFT_UP);
-
 
 					fryer.leftBasket.cookCycle.bf.displayShow = 0;
 
@@ -642,7 +628,6 @@ chispero();
 					leftBasket_temp.cookCycle.time.sec = lefttime_k.sec;
 
 					//++--
-					//fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0x00;
 					fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0x00;
 
 					fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle = BLINK_TOGGLE_BLANK;
@@ -652,16 +637,7 @@ chispero();
 					fryer.leftBasket.cookCycle.editcycle.timerTimeout = 0x0000;//reset
 
 					//change keyboard layout
-					struct _key_prop key_prop = {0};
-					key_prop = propEmpty;
-					key_prop.uFlag.f.onKeyPressed = 1;
-					key_prop.uFlag.f.reptt = 1;
-					key_prop.numGroup = 1;
-					key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
-					key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
-					ikb_setKeyProp(KB_LYOUT_LEFT_DOWN, key_prop);
-					ikb_setKeyProp(KB_LYOUT_LEFT_UP, key_prop);
-					//
+					kbmode_edit_cookCycle();
 					kb_mode = EDIT_COOKCYCLE;
 				}
 			}
@@ -675,11 +651,8 @@ chispero();
 					time_dec(&leftBasket_temp.cookCycle.time);
 					//
 					fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0x00;
-
 					fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle = !BLINK_TOGGLE_BLANK;
 					fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
-
-					//
 					fryer.leftBasket.cookCycle.editcycle.timerTimeout = 0x0000;//reset
 
 				}
@@ -688,12 +661,10 @@ chispero();
 					ikb_key_was_read(KB_LYOUT_LEFT_UP);
 
 					time_inc(&leftBasket_temp.cookCycle.time);
-
 					//
 					fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0x00;
 					fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle = !BLINK_TOGGLE_BLANK;
 					fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
-					//
 					fryer.leftBasket.cookCycle.editcycle.timerTimeout = 0x0000;//reset
 				}
 			}
@@ -712,7 +683,7 @@ chispero();
 						//print Left time mm:ss
 						if (fryer.leftBasket.cookCycle.bf.displayShow == 1)
 						{
-							build_cookCycle_string(&fryer.leftBasket, str);
+							build_cookCycle_string(&fryer.leftBasket.cookCycle.time, str);
 							lcdan_set_cursor(0, 0);
 							lcdan_print_string(str);
 						}
@@ -732,7 +703,7 @@ chispero();
 						//print Right time mm:ss
 						if (fryer.rightBasket.cookCycle.bf.displayShow == 1)
 						{
-							build_cookCycle_string(&fryer.rightBasket, str);
+							build_cookCycle_string(&fryer.rightBasket.cookCycle.time, str);
 							lcdan_set_cursor(0x0B, 0);//xx:xx
 							lcdan_print_string(str);
 						}
@@ -757,7 +728,7 @@ chispero();
 				}
 				else
 				{
-					build_cookCycle_string(&leftBasket_temp, str);//puede ser un puntero que apunte al dato a construir
+					build_cookCycle_string(&leftBasket_temp.cookCycle.time, str);//puede ser un puntero que apunte al dato a construir
 				}
 				lcdan_set_cursor(0, 0);
 				lcdan_print_string(str);
@@ -776,7 +747,6 @@ chispero();
 				}
 
 				//Timeout --------
-
 				if (++fryer.leftBasket.cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
 				{
 					fryer.leftBasket.cookCycle.editcycle.timerTimeout = 0x0000;
@@ -785,7 +755,15 @@ chispero();
 					fryer.leftBasket.cookCycle.editcycle.blink.bf.isActive = 0;
 					fryer.leftBasket.cookCycle.bf.displayShow = 1;
 					//
+					cookCycle_hotUpdate(&leftBasket_temp.cookCycle.time, &lefttime_k, &fryer.leftBasket.cookCycle.time);
+					//return with fryer.leftBasket.cookCycle.time UPDATED!
+
+					lefttime_k = leftBasket_temp.cookCycle.time; //update new cookCycle set-point
+
+					//
+					kbmode_default();
 					kb_mode = DEFAULT;
+					//
 				}
 			}
 

@@ -294,18 +294,13 @@ void ikb_init(void)
 
     #endif // iKEY
 
-    /*by default init with onKeyPressed = 1*/
+    //++--by default init with onKeyPressed = 1
     struct _key_prop prop = {0};
     prop = propEmpty;
-
     prop.uFlag.f.onKeyPressed = 1;
-    /*
-    prop.uFlag.f.reptt = 1;
-    prop.repttTh.breakTime = 50;
-    prop.repttTh.period = 25;
-	*/
     for (i=0; i< KB_NUM_KEYS; i++)
         {ikb_setKeyProp(i, prop);}
+    //--++
 }
 
 void ikb_job(void)
