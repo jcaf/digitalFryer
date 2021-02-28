@@ -248,6 +248,8 @@ int main(void)
 	int8_t kb_mode = 0;
 	//int8_t process_mode = 0;
 
+	int8_t pass_direct = 0;
+
 	//Tiempo Necesario para estabilizar la tarjeta
 //	__delay_ms(2000);//estabilizar tarjeta de deteccion
 
@@ -593,7 +595,7 @@ chispero();
 					fryer.leftBasket.cookCycle.timerCook = 0x00;
 					fryer.rightBasket.cookCycle.timerCook = 0x00;
 					//
-					fryer.leftBasket.cookCycle.bf.on = 1;
+					//fryer.leftBasket.cookCycle.bf.on = 1;
 					fryer.rightBasket.cookCycle.bf.on = 1;
 
 					sm0++;
@@ -616,6 +618,13 @@ chispero();
 
 			if (kb_mode == DEFAULT)
 			{
+				if ( ikb_key_is_ready2read(KB_LYOUT_LEFT_STARTSTOP) )
+				{
+					ikb_key_was_read(KB_LYOUT_LEFT_STARTSTOP);
+
+					fryer.leftBasket.cookCycle.bf.on = 1;
+				}
+
 				if ( (ikb_key_is_ready2read(KB_LYOUT_LEFT_DOWN)) || (ikb_key_is_ready2read(KB_LYOUT_LEFT_UP)) )
 				{
 					ikb_key_was_read(KB_LYOUT_LEFT_DOWN);
@@ -670,26 +679,103 @@ chispero();
 			}
 
 			//+++++++++++++++++++++++++++++++++++++++++++++++++
+			//++--Blinking zone left
+			if (fryer.leftBasket.cookCycle.editcycle.blink.bf.isActive == 1)
+			{
+				if (fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
+				{
+					if (fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle == BLINK_TOGGLE_BLANK)
+					{
+						strcpy(str,"     ");
+					}
+					else
+					{
+						build_cookCycle_string(&leftBasket_temp.cookCycle.time, str);//puede ser un puntero que apunte al dato a construir
+					}
+					lcdan_set_cursor(0, 0);
+					lcdan_print_string(str);
+					//
+					fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass = 0;
+				}
+
+				if (main_flag.f10ms)
+				{
+					if (++fryer.leftBasket.cookCycle.editcycle.blink.timerBlink >= BLINK_TIMER_KMAX)//
+					{
+						fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0x00;
+						//
+						fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle = !fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle;
+						fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
+					}
+
+					//Timeout : Limpiar teclas del basket correspodiente--------
+					if (++fryer.leftBasket.cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
+					{
+						fryer.leftBasket.cookCycle.editcycle.timerTimeout = 0x0000;
+
+						//return to decrementing timing
+						fryer.leftBasket.cookCycle.editcycle.blink.bf.isActive = 0;
+						fryer.leftBasket.cookCycle.bf.displayShow = 1;
+						//
+						cookCycle_hotUpdate(&leftBasket_temp.cookCycle.time, &lefttime_k, &fryer.leftBasket.cookCycle.time);
+						//return with fryer.leftBasket.cookCycle.time UPDATED!
+
+						lefttime_k = leftBasket_temp.cookCycle.time; //update new cookCycle set-point
+						//
+						fryer.leftBasket.cookCycle.timerCook = 0x00;//reset counter
+						pass_direct = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
+						//
+						//clear all keys
+						ikb_key_was_read(KB_LYOUT_LEFT_STARTSTOP);
+						//ikb_key_was_read(KB....)
+						//
+						kbmode_default();
+						kb_mode = DEFAULT;
+						//
+					}
+				}
+			}
+
+			//+++++++++++++++++++++++++++++++++++++++++++++++++
 			if (fryer.leftBasket.cookCycle.bf.on == 1)
 			{
+				if (pass_direct == 1)
+				{
+					//print Left time mm:ss
+					if (fryer.leftBasket.cookCycle.bf.displayShow == 1)
+					{
+						build_cookCycle_string(&fryer.leftBasket.cookCycle.time, str);
+						lcdan_set_cursor(0, 0);
+						lcdan_print_string(str);
+					}
+					//
+					if (fryer.leftBasket.cookCycle.time.sec == 0)
+					{
+						if (fryer.leftBasket.cookCycle.time.min == 0)
+						{
+							fryer.leftBasket.cookCycle.bf.on = 0;
+
+							//
+							PinTo1(PORTWxBUZZER, PINxBUZZER);
+							__delay_ms(15);
+							PinTo0(PORTWxBUZZER, PINxBUZZER);
+						}
+					}
+
+					pass_direct = 0x00;
+				}
 				if (main_flag.f10ms)
 				{
 					if (++fryer.leftBasket.cookCycle.timerCook == 100)
 					{
-						fryer.leftBasket.cookCycle.timerCook = 0;
-
+						fryer.leftBasket.cookCycle.timerCook = 0x00;
+						//
 						time_dec(&fryer.leftBasket.cookCycle.time);
-
-						//print Left time mm:ss
-						if (fryer.leftBasket.cookCycle.bf.displayShow == 1)
-						{
-							build_cookCycle_string(&fryer.leftBasket.cookCycle.time, str);
-							lcdan_set_cursor(0, 0);
-							lcdan_print_string(str);
-						}
+						pass_direct = 1;
 					}
 				}
 			}
+			//
 			if (fryer.rightBasket.cookCycle.bf.on == 1)
 			{
 				if (main_flag.f10ms)
@@ -710,67 +796,12 @@ chispero();
 					}
 				}
 			}
-		}
-		else    											//OFF
+
+		}//switch OFF
+		else
 		{
 
 		}
-
-
-		//++--Blinking zone left
-		if (fryer.leftBasket.cookCycle.editcycle.blink.bf.isActive == 1)
-		{
-			if (fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
-			{
-				if (fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle == BLINK_TOGGLE_BLANK)
-				{
-					strcpy(str,"     ");
-				}
-				else
-				{
-					build_cookCycle_string(&leftBasket_temp.cookCycle.time, str);//puede ser un puntero que apunte al dato a construir
-				}
-				lcdan_set_cursor(0, 0);
-				lcdan_print_string(str);
-				//
-				fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass = 0;
-			}
-
-			if (main_flag.f10ms)
-			{
-				if (++fryer.leftBasket.cookCycle.editcycle.blink.timerBlink >= BLINK_TIMER_KMAX)//
-				{
-					fryer.leftBasket.cookCycle.editcycle.blink.timerBlink = 0x00;
-					//
-					fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle = !fryer.leftBasket.cookCycle.editcycle.blink.bf.toggle;
-					fryer.leftBasket.cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
-				}
-
-				//Timeout --------
-				if (++fryer.leftBasket.cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
-				{
-					fryer.leftBasket.cookCycle.editcycle.timerTimeout = 0x0000;
-
-					//return to decrementing timing
-					fryer.leftBasket.cookCycle.editcycle.blink.bf.isActive = 0;
-					fryer.leftBasket.cookCycle.bf.displayShow = 1;
-					//
-					cookCycle_hotUpdate(&leftBasket_temp.cookCycle.time, &lefttime_k, &fryer.leftBasket.cookCycle.time);
-					//return with fryer.leftBasket.cookCycle.time UPDATED!
-
-					lefttime_k = leftBasket_temp.cookCycle.time; //update new cookCycle set-point
-
-					//
-					kbmode_default();
-					kb_mode = DEFAULT;
-					//
-				}
-			}
-
-
-
-		}
-
 
 		//---------------------------
 		main_flag.f10ms = 0;
