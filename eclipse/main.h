@@ -78,12 +78,6 @@
 #define KB_LYOUT_LEFT_UP 3
 //
 #define KB_LYOUT_PROGRAM 4
-//
-//#define KB_LYOUT_RIGHT_STARTSTOP 5
-//#define KB_LYOUT_RIGHT_SLEEP 6
-//#define KB_LYOUT_RIGHT_DOWN 	7
-//#define KB_LYOUT_RIGHT_UP	8
-
 
 #define KB_LYOUT_RIGHT_DOWN 5	//7
 #define KB_LYOUT_RIGHT_UP	6	//8
