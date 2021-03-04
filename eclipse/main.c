@@ -268,20 +268,13 @@ void kbmode_setEditCookCycle(struct _kb_basket *kb)
 	//ikb_setKeyProp(KB_LYOUT_LEFT_UP, key_prop);
 }
 
-void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate,
-		struct _t *TcookCycle_setPoint_current,
-		struct _t *Tcookcycle_timingrunning)
+void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *TcookCycle_setPoint_current,struct _t *Tcookcycle_timingrunning)
 {
-	int16_t TcookCycle_toUpdate_inSecs =
-			(TcookCycle_setPoint_toUpdate->min * 60)
-					+ TcookCycle_setPoint_toUpdate->sec;
-	int16_t TcookCycle_setPoint_inSecs = (TcookCycle_setPoint_current->min * 60)
-			+ TcookCycle_setPoint_current->sec;
-	int16_t Trunning_inSecs = (Tcookcycle_timingrunning->min * 60)
-			+ Tcookcycle_timingrunning->sec;
+	int16_t TcookCycle_toUpdate_inSecs = (TcookCycle_setPoint_toUpdate->min * 60)+ TcookCycle_setPoint_toUpdate->sec;
+	int16_t TcookCycle_setPoint_inSecs = (TcookCycle_setPoint_current->min * 60)+ TcookCycle_setPoint_current->sec;
+	int16_t Trunning_inSecs = (Tcookcycle_timingrunning->min * 60)+ Tcookcycle_timingrunning->sec;
 
-	int32_t diff_inSec = TcookCycle_toUpdate_inSecs
-			- (TcookCycle_setPoint_inSecs - Trunning_inSecs);
+	int32_t diff_inSec = TcookCycle_toUpdate_inSecs	- (TcookCycle_setPoint_inSecs - Trunning_inSecs);
 
 	if (diff_inSec <= 0)	//Trunc
 	{
@@ -303,7 +296,7 @@ int main(void)
 	struct _basket basket_temp[BASKET_MAXSIZE];
 
 	//k-load from EEPROM
-	struct _t time_k[BASKET_MAXSIZE] = { {3, 0}, {3,0} };    //mm:ss
+	struct _t time_k[BASKET_MAXSIZE] = { {0, 30}, {1,0} };    //mm:ss
 
 	//
 	int MAX6675_ConversionTime_access = 0;
@@ -566,6 +559,7 @@ int main(void)
 			{
 				for (int i=0; i<BASKET_MAXSIZE; i++)
 				{
+					//+-
 					fryer.basket[i].cookCycle.time.min = time_k[i].min;
 					fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
 					fryer.basket[i].display.owner = DISPLAY_TIMING;
@@ -577,6 +571,7 @@ int main(void)
 						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
 						lcdan_print_string(str);
 					}
+					//-+
 				}
 
 				igDeteccFlama_resetJob();
@@ -638,6 +633,21 @@ int main(void)
 						ikb_key_was_read(fryer.basket[i].kb.startStop);
 
 						fryer.basket[i].cookCycle.bf.on = 1;
+
+						//add
+						//+-
+						fryer.basket[i].cookCycle.time.min = time_k[i].min;
+						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+						fryer.basket[i].display.owner = DISPLAY_TIMING;
+						fryer.basket[i].display.bf.print_cookCycle = 1;
+						//
+						if (fryer.basket[i].display.bf.print_cookCycle == 1)
+						{
+							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+							lcdan_print_string(str);
+						}
+						//-+
 					}
 
 					if ( ikb_key_is_ready2read(fryer.basket[i].kb.down) || ikb_key_is_ready2read(fryer.basket[i].kb.up) )
@@ -721,14 +731,18 @@ int main(void)
 							fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
 						}
 
-						//Timeout : Limpiar teclas del basket correspodiente--------
+						//Timeout : Limpiar teclas del basket correspodiente
 						if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
 						{
 							fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;
-							//
-							cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &time_k[i], &fryer.basket[i].cookCycle.time);
-							//return with fryer.basket[i].cookCycle.time UPDATED!
+
+							if (fryer.basket[i].cookCycle.bf.on == 1)
+							{
+								cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &time_k[i], &fryer.basket[i].cookCycle.time);
+								//return with fryer.basket[i].cookCycle.time UPDATED!
+							}
 							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+
 							//
 							fryer.basket[i].cookCycle.timerCook = 0x00;//reset counter
 							//return to decrementing timing
@@ -747,40 +761,10 @@ int main(void)
 						}
 					}
 				}
-
 				//+++++++++++++++++++++++++++++++++++++++++++++++++
-				//print timing decrement mm:ss
-
-				if (fryer.basket[i].display.owner == DISPLAY_TIMING)
-				{
-					if (fryer.basket[i].display.bf.print_cookCycle == 1)
-					{
-						build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-						lcdan_print_string(str);
-						//
-						fryer.basket[i].display.bf.print_cookCycle = 0;
-					}
-				}
 
 				if (fryer.basket[i].cookCycle.bf.on == 1)
 				{
-					if (fryer.basket[i].cookCycle.bf.forceCheckControl == 1)
-					{
-						if (fryer.basket[i].cookCycle.time.sec == 0)
-						{
-							if (fryer.basket[i].cookCycle.time.min == 0)
-							{
-								fryer.basket[i].cookCycle.bf.on = 0;
-								//
-								PinTo1(PORTWxBUZZER, PINxBUZZER);
-								__delay_ms(15);
-								PinTo0(PORTWxBUZZER, PINxBUZZER);
-							}
-						}
-
-						fryer.basket[i].cookCycle.bf.forceCheckControl = 0x00;
-					}
 					if (main_flag.f10ms)
 					{
 						if (++fryer.basket[i].cookCycle.timerCook == 100)
@@ -798,9 +782,37 @@ int main(void)
 
 						}
 					}
-				}
-			}
+					//
+					if (fryer.basket[i].cookCycle.bf.forceCheckControl == 1)
+					{
+						if (fryer.basket[i].cookCycle.time.sec == 0)
+						{
+							if (fryer.basket[i].cookCycle.time.min == 0)
+							{
+								fryer.basket[i].cookCycle.bf.on = 0;
+								//
+								PinTo1(PORTWxBUZZER, PINxBUZZER);__delay_ms(15);PinTo0(PORTWxBUZZER, PINxBUZZER);
+							}
+						}
 
+						fryer.basket[i].cookCycle.bf.forceCheckControl = 0x00;
+					}
+				}
+
+				//print timing decrement mm:ss
+				if (fryer.basket[i].display.owner == DISPLAY_TIMING)
+				{
+					if (fryer.basket[i].display.bf.print_cookCycle == 1)
+					{
+						build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+						lcdan_print_string(str);
+						//
+						fryer.basket[i].display.bf.print_cookCycle = 0;
+					}
+				}
+				//
+			}
 		}						//switch OFF
 		else
 		{

@@ -26,6 +26,9 @@ void time_set(struct _t *pt)
 #define TIME_SEC_NUMMAX 59
 #define TIME_SEC_NUMMIN 0
 
+/*
+ * return: 1 if 0:0:0
+ */
 int8_t time_dec(struct _t *pt)
 {
 	//Check if nothing to do
@@ -156,6 +159,9 @@ int8_t time_dec(struct _t *pt)
 }
 */
 
+/*
+ * return: 1 if 0:0:0
+ */
 int8_t time_inc(struct _t *pt)
 {
 	//Check if nothing to do
