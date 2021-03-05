@@ -201,6 +201,14 @@ struct _basket
 	//----------------------------
 
 	} cookCycle;
+
+	struct _bf_basket
+	{
+			unsigned user_startStop:1;
+			unsigned __a:7;
+
+	}bf;
+
 };
 
 #define BASKET_MAXSIZE 2
@@ -296,7 +304,7 @@ int main(void)
 	struct _basket basket_temp[BASKET_MAXSIZE];
 
 	//k-load from EEPROM
-	struct _t time_k[BASKET_MAXSIZE] = { {0, 30}, {1,0} };    //mm:ss
+	struct _t time_k[BASKET_MAXSIZE] = { {0, 5}, {0,10} };    //mm:ss
 
 	//
 	int MAX6675_ConversionTime_access = 0;
@@ -605,6 +613,22 @@ int main(void)
 					//fryer.basket[1].cookCycle.bf.on = 1;
 
 					sm0++;
+					//++--
+					for (int i=0; i<2; i++)
+					{
+						fryer.basket[i].cookCycle.time.min = time_k[i].min;
+						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+						fryer.basket[i].display.owner = DISPLAY_TIMING;
+						fryer.basket[i].display.bf.print_cookCycle = 1;
+						//
+						if (fryer.basket[i].display.bf.print_cookCycle == 1)
+						{
+							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+							lcdan_print_string(str);
+						}
+					}
+					//--+
 				}
 			}
 			else if (sm0 == 3)
@@ -632,21 +656,50 @@ int main(void)
 					{
 						ikb_key_was_read(fryer.basket[i].kb.startStop);
 
-						fryer.basket[i].cookCycle.bf.on = 1;
-
-						//add
-						//+-
-						fryer.basket[i].cookCycle.time.min = time_k[i].min;
-						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-						fryer.basket[i].display.owner = DISPLAY_TIMING;
-						fryer.basket[i].display.bf.print_cookCycle = 1;
-						//
-						if (fryer.basket[i].display.bf.print_cookCycle == 1)
+						if (fryer.basket[i].bf.user_startStop == 0)
 						{
-							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-							lcdan_print_string(str);
+							fryer.basket[i].bf.user_startStop = 1;
+							//
+							fryer.basket[i].cookCycle.bf.on = 1;
+
 						}
+						else
+						{
+							fryer.basket[i].bf.user_startStop = 0;
+							fryer.basket[i].cookCycle.bf.on = 0;
+							//
+							fryer.basket[i].cookCycle.time.min = time_k[i].min;
+							fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+							//
+							fryer.basket[i].cookCycle.timerCook = 0x00;
+							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;
+							fryer.basket[i].display.owner = DISPLAY_TIMING;
+							fryer.basket[i].display.bf.print_cookCycle = 1;
+							//
+							if (fryer.basket[i].display.bf.print_cookCycle == 1)
+							{
+								build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+								lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+								lcdan_print_string(str);
+							}
+
+						}
+
+
+//						fryer.basket[i].cookCycle.bf.on = 1;
+//						//add
+//						//+-
+//						fryer.basket[i].cookCycle.time.min = time_k[i].min;
+//						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+//						fryer.basket[i].display.owner = DISPLAY_TIMING;
+//						fryer.basket[i].display.bf.print_cookCycle = 1;
+//						//
+//						if (fryer.basket[i].display.bf.print_cookCycle == 1)
+//						{
+//							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+//							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+//							lcdan_print_string(str);
+//						}
 						//-+
 					}
 
@@ -686,8 +739,8 @@ int main(void)
 						fryer.basket[i].cookCycle.editcycle.blink.bf.toggle = !BLINK_TOGGLE_BLANK;
 						fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
 						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
-
 					}
+
 					if (ikb_key_is_ready2read(fryer.basket[i].kb.up))
 					{
 						ikb_key_was_read(fryer.basket[i].kb.up);
