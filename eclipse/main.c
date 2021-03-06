@@ -77,6 +77,7 @@
 #include "timing/timing.h"
 #include "utils/utils.h"
 #include "adc.h"
+#include "blink/blink.h"
 
 //Temperaturas
 int16_t Temper_Precalentamiento = 10;
@@ -118,8 +119,6 @@ struct _main_flag
 
 } main_flag = { 0 };
 
-#define BLINK_TOGGLE_BLANK 1
-#define BLINK_BYPASS_TIMER 1
 #define BLINK_TIMER_KMAX (400/10)//Xms/10ms de acceso
 #define EDITCYCLE_TIMERTIMEOUT_K (5000/10)//5000ms/10ms
 
@@ -183,21 +182,28 @@ struct _basket
 		{
 			int16_t timerTimeout;
 
-			struct _blink
+			struct _bf_editcycle
 			{
-				struct _bf_blink
-				{
-					unsigned toggle :1;
-					unsigned isActive :1;
-					unsigned bypass :1;
-					unsigned a :5;
-				} bf;
+				unsigned blinkIsActive :1;
+				unsigned __a:7;
+			} bf;
 
-				int8_t timerBlink;
-
-			} blink;
+//			struct _blink
+//			{
+//				struct _bf_blink
+//				{
+//					unsigned toggle :1;
+//					unsigned bypass :1;
+//					unsigned isActive :1;
+//					unsigned a :5;
+//				} bf;
+//				int8_t timerBlink;
+//			} blink;
 
 		} editcycle;
+
+		struct _blink blink;
+
 	//----------------------------
 
 	} cookCycle;
@@ -685,22 +691,6 @@ int main(void)
 
 						}
 
-
-//						fryer.basket[i].cookCycle.bf.on = 1;
-//						//add
-//						//+-
-//						fryer.basket[i].cookCycle.time.min = time_k[i].min;
-//						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-//						fryer.basket[i].display.owner = DISPLAY_TIMING;
-//						fryer.basket[i].display.bf.print_cookCycle = 1;
-//						//
-//						if (fryer.basket[i].display.bf.print_cookCycle == 1)
-//						{
-//							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-//							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-//							lcdan_print_string(str);
-//						}
-						//-+
 					}
 
 					if ( ikb_key_is_ready2read(fryer.basket[i].kb.down) || ikb_key_is_ready2read(fryer.basket[i].kb.up) )
