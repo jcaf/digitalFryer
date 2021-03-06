@@ -187,7 +187,6 @@ struct _basket
 				unsigned blinkIsActive :1;
 				unsigned __a:7;
 			} bf;
-
 //			struct _blink
 //			{
 //				struct _bf_blink
@@ -199,10 +198,9 @@ struct _basket
 //				} bf;
 //				int8_t timerBlink;
 //			} blink;
-
 		} editcycle;
 
-		struct _blink blink;
+
 
 	//----------------------------
 
@@ -214,6 +212,8 @@ struct _basket
 			unsigned __a:7;
 
 	}bf;
+
+	struct _blink blink;
 
 };
 
@@ -304,6 +304,8 @@ void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *Tco
 
 int main(void)
 {
+
+
 	int8_t sm0 = 0;
 	int c = 0;
 
@@ -488,6 +490,11 @@ int main(void)
 	//ConfigOutputPin(DDRC,0);
 
 
+	//----------------------------
+//	fryer.basket[0].blink.timerBlink_K =  BLINK_TIMER_KMAX;
+//	fryer.basket[1].blink.timerBlink_K =  BLINK_TIMER_KMAX;
+	//----------------------------
+
 	while (1)
 	{
 		if (isr_flag.f10ms)
@@ -573,6 +580,7 @@ int main(void)
 			{
 				for (int i=0; i<BASKET_MAXSIZE; i++)
 				{
+					fryer.basket[i].blink.timerBlink_K =  BLINK_TIMER_KMAX;
 					//+-
 					fryer.basket[i].cookCycle.time.min = time_k[i].min;
 					fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
@@ -656,6 +664,8 @@ int main(void)
 			//++++++++++++++++++++++++++++++++++
 			for (int i=0; i<BASKET_MAXSIZE; i++)
 			{
+				blink_set(&fryer.basket[i].blink);
+
 				if (fryer.basket[i].kb.mode == DEFAULT)
 				{
 					if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
@@ -704,10 +714,12 @@ int main(void)
 						basket_temp[i].cookCycle.time.min = time_k[i].min;
 						basket_temp[i].cookCycle.time.sec = time_k[i].sec;
 						//++--
-						fryer.basket[i].cookCycle.editcycle.blink.timerBlink = 0x00;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.toggle = BLINK_TOGGLE_BLANK;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.isActive = 1;
+//						fryer.basket[i].blink.timerBlink = 0x00;
+//						fryer.basket[i].blink.bf.toggle = BLINK_TOGGLE_BLANK;
+//						fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
+						blink_reset();
+
+						fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
 						fryer.basket[i].display.owner = DISPLAY_EDITCOOKCYCLE;
 						//--++
 						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
@@ -725,9 +737,10 @@ int main(void)
 
 						time_dec(&basket_temp[i].cookCycle.time);
 						//
-						fryer.basket[i].cookCycle.editcycle.blink.timerBlink = 0x00;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.toggle = !BLINK_TOGGLE_BLANK;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
+//						fryer.basket[i].blink.timerBlink = 0x00;
+//						fryer.basket[i].blink.bf.toggle = !BLINK_TOGGLE_BLANK;
+//						fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
+						blink_reset();
 						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
 					}
 
@@ -737,20 +750,21 @@ int main(void)
 
 						time_inc(&basket_temp[i].cookCycle.time);
 						//
-						fryer.basket[i].cookCycle.editcycle.blink.timerBlink = 0x00;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.toggle = !BLINK_TOGGLE_BLANK;
-						fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
+//						fryer.basket[i].blink.timerBlink = 0x00;
+//						fryer.basket[i].blink.bf.toggle = !BLINK_TOGGLE_BLANK;
+//						fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
+						blink_reset();
 						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
 					}
 				}
 
 				//+++++++++++++++++++++++++++++++++++++++++++++++++
 				//++--Blinking zone left
-				if (fryer.basket[i].cookCycle.editcycle.blink.bf.isActive == 1)
+				if (fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive == 1)
 				{
-					if (fryer.basket[i].cookCycle.editcycle.blink.bf.bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
+					if (fryer.basket[i].blink.bf.bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
 					{
-						if (fryer.basket[i].cookCycle.editcycle.blink.bf.toggle == BLINK_TOGGLE_BLANK)
+						if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_BLANK)
 						{
 							strcpy(str,"     ");
 						}
@@ -761,18 +775,18 @@ int main(void)
 						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
 						lcdan_print_string(str);
 						//
-						fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = 0;
+						fryer.basket[i].blink.bf.bypass = 0;
 					}
 
 					if (main_flag.f10ms)
 					{
-						if (++fryer.basket[i].cookCycle.editcycle.blink.timerBlink >= BLINK_TIMER_KMAX)	//
-						{
-							fryer.basket[i].cookCycle.editcycle.blink.timerBlink = 0x00;
-							//
-							fryer.basket[i].cookCycle.editcycle.blink.bf.toggle = !fryer.basket[i].cookCycle.editcycle.blink.bf.toggle;
-							fryer.basket[i].cookCycle.editcycle.blink.bf.bypass = BLINK_BYPASS_TIMER;
-						}
+//						if (++fryer.basket[i].blink.timerBlink >= BLINK_TIMER_KMAX)	//
+//						{
+//							fryer.basket[i].blink.timerBlink = 0x00;
+//							//
+//							fryer.basket[i].blink.bf.toggle = !fryer.basket[i].blink.bf.toggle;
+//							fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
+//						}
 
 						//Timeout : Limpiar teclas del basket correspodiente
 						if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
@@ -789,7 +803,7 @@ int main(void)
 							//
 							fryer.basket[i].cookCycle.timerCook = 0x00;//reset counter
 							//return to decrementing timing
-							fryer.basket[i].cookCycle.editcycle.blink.bf.isActive = 0;
+							fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 0;
 							fryer.basket[i].display.owner = DISPLAY_TIMING;
 							fryer.basket[i].display.bf.print_cookCycle = 1;
 							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
@@ -803,6 +817,11 @@ int main(void)
 							//
 						}
 					}
+				}
+				//+++++++++++++++++++++++++++++++++++++++++++++++++
+				if (main_flag.f10ms)
+				{
+					blink_timing();
 				}
 				//+++++++++++++++++++++++++++++++++++++++++++++++++
 
