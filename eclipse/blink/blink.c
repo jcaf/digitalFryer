@@ -14,11 +14,18 @@
 		blink = b;//set address
 	}
 
-	void blink_reset(void)
+//	void blink_reset(void)
+//	{
+//		blink->timerBlink = 0x00;
+//		blink->bf.bypass = BLINK_BYPASS_TIMER;
+//		blink->bf.toggle = !BLINK_TOGGLE_BLANK;//mejor q sea 0
+//	}
+	void blink_reset(int8_t BLINK_TOGGLE_STATE)
 	{
 		blink->timerBlink = 0x00;
 		blink->bf.bypass = BLINK_BYPASS_TIMER;
-		blink->bf.toggle = BLINK_TOGGLE_BLANK;//mejor q sea 0
+		//blink->bf.toggle = !BLINK_TOGGLE_BLANK;//mejor q sea 0
+		blink->bf.toggle = BLINK_TOGGLE_STATE;
 	}
 	void blink_timing(void)
 	{

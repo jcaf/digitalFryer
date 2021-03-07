@@ -171,12 +171,10 @@ struct _basket
 		struct _bf_cookCycle
 		{
 			unsigned on :1;
-			//unsigned displayShow :1;
 			unsigned forceCheckControl :1;
-
-			unsigned a :6;
+			unsigned blinkDone :1;
+			unsigned __a:5;
 		} bf;
-		//----------------------------
 
 		struct _editcycle
 		{
@@ -187,29 +185,15 @@ struct _basket
 				unsigned blinkIsActive :1;
 				unsigned __a:7;
 			} bf;
-//			struct _blink
-//			{
-//				struct _bf_blink
-//				{
-//					unsigned toggle :1;
-//					unsigned bypass :1;
-//					unsigned isActive :1;
-//					unsigned a :5;
-//				} bf;
-//				int8_t timerBlink;
-//			} blink;
+
 		} editcycle;
-
-
-
-	//----------------------------
 
 	} cookCycle;
 
 	struct _bf_basket
 	{
-			unsigned user_startStop:1;
-			unsigned __a:7;
+		unsigned user_startStop:1;
+		unsigned __a:7;
 
 	}bf;
 
@@ -489,12 +473,6 @@ int main(void)
 	//
 	//ConfigOutputPin(DDRC,0);
 
-
-	//----------------------------
-//	fryer.basket[0].blink.timerBlink_K =  BLINK_TIMER_KMAX;
-//	fryer.basket[1].blink.timerBlink_K =  BLINK_TIMER_KMAX;
-	//----------------------------
-
 	while (1)
 	{
 		if (isr_flag.f10ms)
@@ -620,12 +598,6 @@ int main(void)
 					//buzzer beep + LCD +
 					//PID_Control -> setpoint = T
 
-					//fryer.basket[0].cookCycle.timerCook = 0x00;
-					//fryer.basket[1].cookCycle.timerCook = 0x00;
-					//
-					//fryer.basket[0].cookCycle.bf.on = 1;
-					//fryer.basket[1].cookCycle.bf.on = 1;
-
 					sm0++;
 					//++--
 					for (int i=0; i<2; i++)
@@ -683,14 +655,15 @@ int main(void)
 						{
 							fryer.basket[i].bf.user_startStop = 0;
 							fryer.basket[i].cookCycle.bf.on = 0;
-							//
+							//load from eeprom
 							fryer.basket[i].cookCycle.time.min = time_k[i].min;
 							fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-							//
+							//return to decrementing timing
 							fryer.basket[i].cookCycle.timerCook = 0x00;
 							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;
 							fryer.basket[i].display.owner = DISPLAY_TIMING;
 							fryer.basket[i].display.bf.print_cookCycle = 1;
+							fryer.basket[i].cookCycle.bf.blinkDone = 0;
 							//
 							if (fryer.basket[i].display.bf.print_cookCycle == 1)
 							{
@@ -698,9 +671,7 @@ int main(void)
 								lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
 								lcdan_print_string(str);
 							}
-
 						}
-
 					}
 
 					if ( ikb_key_is_ready2read(fryer.basket[i].kb.down) || ikb_key_is_ready2read(fryer.basket[i].kb.up) )
@@ -714,10 +685,7 @@ int main(void)
 						basket_temp[i].cookCycle.time.min = time_k[i].min;
 						basket_temp[i].cookCycle.time.sec = time_k[i].sec;
 						//++--
-//						fryer.basket[i].blink.timerBlink = 0x00;
-//						fryer.basket[i].blink.bf.toggle = BLINK_TOGGLE_BLANK;
-//						fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
-						blink_reset();
+						blink_reset(BLINK_TOGGLE_SET_BLANK);
 
 						fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
 						fryer.basket[i].display.owner = DISPLAY_EDITCOOKCYCLE;
@@ -737,10 +705,7 @@ int main(void)
 
 						time_dec(&basket_temp[i].cookCycle.time);
 						//
-//						fryer.basket[i].blink.timerBlink = 0x00;
-//						fryer.basket[i].blink.bf.toggle = !BLINK_TOGGLE_BLANK;
-//						fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
-						blink_reset();
+						blink_reset(BLINK_TOGGLE_SET_TEXT);
 						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
 					}
 
@@ -750,10 +715,7 @@ int main(void)
 
 						time_inc(&basket_temp[i].cookCycle.time);
 						//
-//						fryer.basket[i].blink.timerBlink = 0x00;
-//						fryer.basket[i].blink.bf.toggle = !BLINK_TOGGLE_BLANK;
-//						fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
-						blink_reset();
+						blink_reset(BLINK_TOGGLE_SET_TEXT);
 						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
 					}
 				}
@@ -764,11 +726,11 @@ int main(void)
 				{
 					if (fryer.basket[i].blink.bf.bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
 					{
-						if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_BLANK)
+						if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
 						{
 							strcpy(str,"     ");
 						}
-						else
+						else//BLINK_TOGGLE_SET_TEXT
 						{
 							build_cookCycle_string(&basket_temp[i].cookCycle.time, str);//puede ser un puntero que apunte al dato a construir
 						}
@@ -780,14 +742,6 @@ int main(void)
 
 					if (main_flag.f10ms)
 					{
-//						if (++fryer.basket[i].blink.timerBlink >= BLINK_TIMER_KMAX)	//
-//						{
-//							fryer.basket[i].blink.timerBlink = 0x00;
-//							//
-//							fryer.basket[i].blink.bf.toggle = !fryer.basket[i].blink.bf.toggle;
-//							fryer.basket[i].blink.bf.bypass = BLINK_BYPASS_TIMER;
-//						}
-
 						//Timeout : Limpiar teclas del basket correspodiente
 						if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
 						{
@@ -798,15 +752,19 @@ int main(void)
 								cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &time_k[i], &fryer.basket[i].cookCycle.time);
 								//return with fryer.basket[i].cookCycle.time UPDATED!
 							}
+							//update eeprom
 							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
-
+							//load from eeprom
+							fryer.basket[i].cookCycle.time.min = time_k[i].min;
+							fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
 							//
-							fryer.basket[i].cookCycle.timerCook = 0x00;//reset counter
-							//return to decrementing timing
+
 							fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 0;
+							//return to decrementing timing
+							fryer.basket[i].cookCycle.timerCook = 0x00;//reset counter
+							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
 							fryer.basket[i].display.owner = DISPLAY_TIMING;
 							fryer.basket[i].display.bf.print_cookCycle = 1;
-							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
 							//
 							//clear all keys * solo por ahora seria startstop
 							ikb_key_was_read(fryer.basket[i].kb.startStop);
@@ -818,12 +776,12 @@ int main(void)
 						}
 					}
 				}
-				//+++++++++++++++++++++++++++++++++++++++++++++++++
-				if (main_flag.f10ms)
-				{
-					blink_timing();
-				}
-				//+++++++++++++++++++++++++++++++++++++++++++++++++
+//				//+++++++++++++++++++++++++++++++++++++++++++++++++
+//				if (main_flag.f10ms)
+//				{
+//					blink_timing();
+//				}
+//				//+++++++++++++++++++++++++++++++++++++++++++++++++
 
 				if (fryer.basket[i].cookCycle.bf.on == 1)
 				{
@@ -841,7 +799,6 @@ int main(void)
 							{
 								fryer.basket[i].display.bf.print_cookCycle = 1;
 							}
-
 						}
 					}
 					//
@@ -853,7 +810,10 @@ int main(void)
 							{
 								fryer.basket[i].cookCycle.bf.on = 0;
 								//
-								PinTo1(PORTWxBUZZER, PINxBUZZER);__delay_ms(15);PinTo0(PORTWxBUZZER, PINxBUZZER);
+								//PinTo1(PORTWxBUZZER, PINxBUZZER);__delay_ms(15);PinTo0(PORTWxBUZZER, PINxBUZZER);
+								blink_reset(BLINK_TOGGLE_SET_TEXT);
+								fryer.basket[i].display.bf.print_cookCycle = 0;
+								fryer.basket[i].cookCycle.bf.blinkDone = 1;
 							}
 						}
 
@@ -872,8 +832,29 @@ int main(void)
 						//
 						fryer.basket[i].display.bf.print_cookCycle = 0;
 					}
+					//blink
+					if (fryer.basket[i].cookCycle.bf.blinkDone == 1)
+					{
+						if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
+						{
+							strcpy(str,"     ");
+						}
+						else//BLINK_TOGGLE_SET_TEXT
+						{
+							strcpy(str,"DONE ");
+						}
+						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+						lcdan_print_string(str);
+
+					}
 				}
 				//
+				//+++++++++++++++++++++++++++++++++++++++++++++++++
+				if (main_flag.f10ms)
+				{
+					blink_timing();
+				}
+				//+++++++++++++++++++++++++++++++++++++++++++++++++
 			}
 		}						//switch OFF
 		else

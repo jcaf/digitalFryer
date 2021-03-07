@@ -22,10 +22,13 @@
 		}bf;
 	};
 
+		void blink_reset(int8_t BLINK_TOGGLE_STATE);
 		void blink_set(struct _blink *b);
 		void blink_timing(void);
 
-	#define BLINK_TOGGLE_BLANK 1
+	#define BLINK_TOGGLE_SET_BLANK 0	//Mostrar directamente blanco
+	#define BLINK_TOGGLE_SET_TEXT 1		//Mostrar diretamente el texto
+
 	#define BLINK_BYPASS_TIMER 1
 
 #endif /* BLINK_BLINK_H_ */
