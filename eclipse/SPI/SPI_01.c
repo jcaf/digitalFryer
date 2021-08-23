@@ -12,9 +12,11 @@
 		//ConfigOutputPin(CONFIGIOxSPI_MOSI, PINxKB_SPI_MOSI);
 		//ConfigOutputPin(CONFIGIOxSPI_SCK, PINxKB_SPI_SCK);
 		//ConfigOutputPin(CONFIGIOxSPI_CS, PINxKB_SPI_CS);
-        DDRB |= (1<<7) | (1<< 4) | (1<< 5);
+
+		DDRB |= (1<<7) | (1<< 4) | (1<< 5);
 
         SPCR = (1<<SPE) | (MSB_LSB_FIRST<< DORD) | (1<<MSTR) | (0<<CPOL) | (1<<CPHA) | (SPR1SPR0_SCK_FOSC_128);
+
        // SPSR = DOUBLE_SPI_SPEED_BIT << SPI2X;
 
 	}//End fx()

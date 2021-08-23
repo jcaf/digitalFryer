@@ -545,7 +545,6 @@ int main(void)
 				chispero();
 
 				ikb_job();
-
 			}
 		}
 		//-------------------
