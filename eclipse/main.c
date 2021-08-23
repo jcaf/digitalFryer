@@ -55,9 +55,6 @@
 
  (ignorar el error de 0x3C... pues los 2 bits de mayor peso no estan implentados)
 
- 25 en 2020: BRAYAN 0.35 - 0.6 A TODAS LAS TARJETAS, OK MOTOR UNIPOLAR
-
- MODO DE FUNCIONAMIENTO:
 
 
  */
