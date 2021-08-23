@@ -56,7 +56,6 @@
  (ignorar el error de 0x3C... pues los 2 bits de mayor peso no estan implentados)
 
 
-
  */
 
 #include <avr/io.h>
