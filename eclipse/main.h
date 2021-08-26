@@ -162,6 +162,10 @@ extern struct _mainflag mainflag;
 
 #define SYSTICK_MS 10//10ms
 
+
+extern struct _t time_k[BASKET_MAXSIZE];
+
+
 //////////////////////////////////////////
 	//Tiempos de Ignicion
 	#define TchispaIg 500//ms Tiempo de Chispa de igninicion
