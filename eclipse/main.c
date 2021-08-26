@@ -58,22 +58,13 @@
 
  */
 
-#include <avr/io.h>
 #include "main.h"
-#include "types.h"
-#include "system.h"
-#include "lcdan/lcdan.h"
-#include "lcdan/lcdan_aux.h"
-#include "ikb/ikb.h"
-#include "MAX6675.h"
-#include "SPI/SPI.h"
-#include "Temperature/temperature.h"
+
 #include "pinGetLevel/pinGetLevel.h"
 #include "igDeteccFlama.h"
-#include "timing/timing.h"
-#include "utils/utils.h"
 #include "adc.h"
-#include "blink/blink.h"
+#include "psmode_program.h"
+
 
 //Temperaturas
 int16_t Temper_Precalentamiento = 10;
@@ -97,115 +88,25 @@ void solenoideGasPiloto_off(void)
 {
 }
 
-int16_t temper_measured; //expose global
+
 
 volatile struct _isr_flag
 {
-	unsigned f10ms :1;
+	unsigned sysTickMs :1;
 	unsigned __a :7;
 } isr_flag = { 0 };
 
-struct _main_flag
-{
-	unsigned f10ms :1;
-//	unsigned blink_toggle: 1;
-//	unsigned blink_isActive: 1;
-//	unsigned blink_bypass:1;//print direct without wait timer
-	unsigned __a;
 
-} main_flag = { 0 };
+struct _mainflag mainflag;
 
 #define BLINK_TIMER_KMAX (400/10)//Xms/10ms de acceso
 #define EDITCYCLE_TIMERTIMEOUT_K (5000/10)//5000ms/10ms
 
-enum E_KB_MODE
-{
-	DEFAULT = 0,
-	EDIT_COOKCYCLE,
-	EDIT_TSETPOINT
-};
-enum DISPLAY_OWNER
-{
-	DISPLAY_TIMING = 0,
-	DISPLAY_EDITCOOKCYCLE,
-};
+const struct _process ps_reset;
+struct _fryer fryer;
 
-struct _basket
-{
-	struct _display_basket
-	{
-		struct _cursor
-		{
-			int8_t x;
-			int8_t y;
-		}cursor;
-
-		struct _bf_display_basket
-		{
-			unsigned print_cookCycle :1;
-			unsigned __a:7;
-		}bf;
-
-		int8_t owner;
-	}display;
-
-	struct _kb_basket
-	{
-		int8_t startStop;
-		int8_t sleep;
-		int8_t down;
-		int8_t up;
-		//
-		int8_t mode;
-	} kb;
-
-	struct _cookCycle
-	{
-		struct _t time;
-		int8_t timerCook;
-
-		struct _bf_cookCycle
-		{
-			unsigned on :1;
-			unsigned forceCheckControl :1;
-			unsigned blinkDone :1;
-			unsigned __a:5;
-		} bf;
-
-		struct _editcycle
-		{
-			int16_t timerTimeout;
-
-			struct _bf_editcycle
-			{
-				unsigned blinkIsActive :1;
-				unsigned __a:7;
-			} bf;
-
-		} editcycle;
-
-	} cookCycle;
-
-	struct _bf_basket
-	{
-		unsigned user_startStop:1;
-		unsigned __a:7;
-
-	}bf;
-
-	struct _blink blink;
-
-};
-
-#define BASKET_MAXSIZE 2
-#define BASKET_LEFT 0
-#define BASKET_RIGHT 1
-
-struct _fryer
-{
-	struct _basket basket[BASKET_MAXSIZE];
-	//int8_t kb_mode;
-} fryer;
+struct _job job_captureTemperature;
+const struct _job job_reset;
 
 void chispero(void);
 
@@ -282,10 +183,9 @@ void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *Tco
 	}
 }
 
+
 int main(void)
 {
-
-
 	int8_t sm0 = 0;
 	int c = 0;
 
@@ -295,14 +195,15 @@ int main(void)
 	struct _t time_k[BASKET_MAXSIZE] = { {0, 5}, {0,10} };    //mm:ss
 
 	//
-	int MAX6675_ConversionTime_access = 0;
-	float TmprFactCorr = +2;
-	int16_t TmprCelsius = 0;
-	int16_t temper_mean_val = 0;
-	int8_t temper_mean_n_samples = 0;
-	char temper_measured_str[10] = "";
+
+//	float TmprFactCorr = +2;
+//	int16_t TmprCelsius = 0;
+//	int16_t temper_mean_val = 0;
+//	int8_t temper_mean_n_samples = 0;
+//	char temper_measured_str[10] = "";
 	//
 	char str[20];
+
 
 	//++--
 	//Kb init
@@ -311,7 +212,7 @@ int main(void)
 	fryer.basket[BASKET_LEFT].kb.down = KB_LYOUT_LEFT_DOWN;
 	fryer.basket[BASKET_LEFT].kb.up = KB_LYOUT_LEFT_UP;
 
-	fryer.basket[BASKET_LEFT].display.cursor.x = 0x00;
+	fryer.basket[BASKET_LEFT].display.cursor.x = DISP_CURSOR_BASKETLEFT_START_X;//0x00;
 	fryer.basket[BASKET_LEFT].display.cursor.y = 0x00;
 
 	//
@@ -320,7 +221,7 @@ int main(void)
 	fryer.basket[BASKET_RIGHT].kb.down = KB_LYOUT_RIGHT_DOWN;
 	fryer.basket[BASKET_RIGHT].kb.up = KB_LYOUT_RIGHT_UP;
 
-	fryer.basket[BASKET_RIGHT].display.cursor.x = 0x0B;
+	fryer.basket[BASKET_RIGHT].display.cursor.x = DISP_CURSOR_BASKETRIGHT_START_X;//0x0B;
 	fryer.basket[BASKET_RIGHT].display.cursor.y = 0x00;
 	//--++
 
@@ -471,56 +372,21 @@ int main(void)
 
 	while (1)
 	{
-		if (isr_flag.f10ms)
+		if (isr_flag.sysTickMs)
 		{
-			isr_flag.f10ms = 0;
-			main_flag.f10ms = 1;
+			isr_flag.sysTickMs = 0;
+			mainflag.sysTickMs = 1;
 		}
 
+
+
 		//----------------------
-		if (main_flag.f10ms)
+		if (mainflag.sysTickMs)
 		{
 			if (++c == 2)    //20ms
 			{
 				c = 0;
 
-				if (++MAX6675_ConversionTime_access == 11) //MAX6675 has max 0.22s
-				{
-					MAX6675_ConversionTime_access = 0;
-
-					TmprCelsius = (int) MAX6675_getFloatTmprCelsius();
-					//
-					if (TmprCelsius < 0)    //error cable disconnected ?
-					{
-						temper_measured = TmprCelsius;
-						//reset counters
-						temper_mean_n_samples = 0x00;
-						temper_mean_val = 0x00;
-						//
-						MAX6675_convertIntTmptr2str_wformatPrint3dig(
-								temper_measured, temper_measured_str);
-					}
-					else
-					{
-						temper_mean_val += TmprCelsius;
-
-						#define TEMPER_K_MULT_DIV_SHIFT 3//MULT_DIV_SHIFT -
-						#define TEMPER_MEAN_SAMPLES (0x001<<TEMPER_K_MULT_DIV_SHIFT)//4
-
-						if (++temper_mean_n_samples >= TEMPER_MEAN_SAMPLES)
-						{
-							temper_measured = ((int16_t) (temper_mean_val
-									>> TEMPER_K_MULT_DIV_SHIFT)) + TmprFactCorr; //div usando shift
-							//
-							temper_mean_n_samples = 0x00;
-							temper_mean_val = 0x00;
-
-							//
-							MAX6675_convertIntTmptr2str_wformatPrint3dig(
-									temper_measured, temper_measured_str);
-						}
-					}
-				}
 				pinGetLevel_job();
 				//---------------------------
 				if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_SWONOFF))
@@ -543,9 +409,6 @@ int main(void)
 				ikb_job();
 			}
 		}
-		//-------------------
-		//lcdan_set_cursor(6, 0);
-		//lcdan_print_string(temper_measured_str);
 
 		if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)
 		{
@@ -595,7 +458,7 @@ int main(void)
 
 					sm0++;
 					//++--
-					for (int i=0; i<2; i++)
+					for (int i=0; i<BASKET_MAXSIZE; i++)
 					{
 						fryer.basket[i].cookCycle.time.min = time_k[i].min;
 						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
@@ -621,244 +484,283 @@ int main(void)
 			if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 			{
 				ikb_key_was_read(KB_LYOUT_PROGRAM);
+
 //				if (++fryer.basket[i].kb.mode >= 3)
 //				{
 //					fryer.basket[i].kb.mode = 0x00;
 //				}
+				/*
+				 * 1st touch -> OIL (TEMPERATURA ACTUAL)
+				 * 2nd touch -> SET (TEMPERATURA DE MANTENIMIENTO)
+				 * 				USA LAS TECLAS DE LA DERECHA
+				 * 3th touch -> sale y muestra el tiempo
+				 *
+				 *SYSTEMMODE_OPERATIVE,
+				SYSTEMMODE_PROGRAM,
+				 */
+
 			}
-			//++++++++++++++++++++++++++++++++++
-			//desde aqui todo es compartido
-			//++++++++++++++++++++++++++++++++++
-			for (int i=0; i<BASKET_MAXSIZE; i++)
+
+			//---------------------------------------------------
+			if (fryer.psmode == PSMODE_PROGRAM)
 			{
-				blink_set(&fryer.basket[i].blink);
+				psmode_program();
 
-				if (fryer.basket[i].kb.mode == DEFAULT)
+			}
+			else if (fryer.psmode == PSMODE_OPERATIVE)
+			{
+				//
+				if (fryer.ps_operative.sm0 == 0)
 				{
-					if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
-					{
-						ikb_key_was_read(fryer.basket[i].kb.startStop);
 
-						if (fryer.basket[i].bf.user_startStop == 0)
-						{
-							fryer.basket[i].bf.user_startStop = 1;
-							//
-							fryer.basket[i].cookCycle.bf.on = 1;
-
-						}
-						else
-						{
-							fryer.basket[i].bf.user_startStop = 0;
-							fryer.basket[i].cookCycle.bf.on = 0;
-							//load from eeprom
-							fryer.basket[i].cookCycle.time.min = time_k[i].min;
-							fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-							//return to decrementing timing
-							fryer.basket[i].cookCycle.timerCook = 0x00;
-							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;
-							fryer.basket[i].display.owner = DISPLAY_TIMING;
-							fryer.basket[i].display.bf.print_cookCycle = 1;
-							fryer.basket[i].cookCycle.bf.blinkDone = 0;
-							//
-							if (fryer.basket[i].display.bf.print_cookCycle == 1)
-							{
-								build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-								lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-								lcdan_print_string(str);
-							}
-						}
-					}
-
-					if ( ikb_key_is_ready2read(fryer.basket[i].kb.down) || ikb_key_is_ready2read(fryer.basket[i].kb.up) )
-					{
-						ikb_key_was_read(fryer.basket[i].kb.down);
-						ikb_key_was_read(fryer.basket[i].kb.up);
-
-						fryer.basket[i].display.bf.print_cookCycle = 0;
-
-						//solo muestra blinkeando el valor...
-						basket_temp[i].cookCycle.time.min = time_k[i].min;
-						basket_temp[i].cookCycle.time.sec = time_k[i].sec;
-						//++--
-						blink_reset(BLINK_TOGGLE_SET_BLANK);
-
-						fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
-						fryer.basket[i].display.owner = DISPLAY_EDITCOOKCYCLE;
-						//--++
-						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
-
-						//change keyboard layout
-						kbmode_setEditCookCycle(&fryer.basket[i].kb);
-						fryer.basket[i].kb.mode = EDIT_COOKCYCLE;
-					}
-				}
-				else if (fryer.basket[i].kb.mode == EDIT_COOKCYCLE)
-				{
-					if (ikb_key_is_ready2read(fryer.basket[i].kb.down))
-					{
-						ikb_key_was_read(fryer.basket[i].kb.down);
-
-						time_dec(&basket_temp[i].cookCycle.time);
-						//
-						blink_reset(BLINK_TOGGLE_SET_TEXT);
-						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
-					}
-
-					if (ikb_key_is_ready2read(fryer.basket[i].kb.up))
-					{
-						ikb_key_was_read(fryer.basket[i].kb.up);
-
-						time_inc(&basket_temp[i].cookCycle.time);
-						//
-						blink_reset(BLINK_TOGGLE_SET_TEXT);
-						fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
-					}
 				}
 
-				//+++++++++++++++++++++++++++++++++++++++++++++++++
-				//++--Blinking zone left
-				if (fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive == 1)
+				for (int i=0; i<BASKET_MAXSIZE; i++)
 				{
-					if (fryer.basket[i].blink.bf.bypass == BLINK_BYPASS_TIMER)//entrar y mostrar directamente bypaseando el turno por el timer
+					blink_set(&fryer.basket[i].blink);
+
+					if (fryer.basket[i].kb.mode == KBMODE_DEFAULT)
 					{
-						if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
+						if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
 						{
-							strcpy(str,"     ");
-						}
-						else//BLINK_TOGGLE_SET_TEXT
-						{
-							build_cookCycle_string(&basket_temp[i].cookCycle.time, str);//puede ser un puntero que apunte al dato a construir
-						}
-						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-						lcdan_print_string(str);
-						//
-						fryer.basket[i].blink.bf.bypass = 0;
-					}
-
-					if (main_flag.f10ms)
-					{
-						//Timeout : Limpiar teclas del basket correspodiente
-						if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
-						{
-							fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;
-
-							if (fryer.basket[i].cookCycle.bf.on == 1)
-							{
-								cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &time_k[i], &fryer.basket[i].cookCycle.time);
-								//return with fryer.basket[i].cookCycle.time UPDATED!
-							}
-							//update eeprom
-							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
-							//load from eeprom
-							fryer.basket[i].cookCycle.time.min = time_k[i].min;
-							fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-							//
-
-							fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 0;
-							//return to decrementing timing
-							fryer.basket[i].cookCycle.timerCook = 0x00;//reset counter
-							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
-							fryer.basket[i].display.owner = DISPLAY_TIMING;
-							fryer.basket[i].display.bf.print_cookCycle = 1;
-							//
-							//clear all keys * solo por ahora seria startstop
 							ikb_key_was_read(fryer.basket[i].kb.startStop);
-							ikb_key_was_read(fryer.basket[i].kb.sleep);
-							//
-							kbmode_setDefault(&fryer.basket[i].kb);
-							fryer.basket[i].kb.mode = DEFAULT;
-							//
+
+							if (fryer.basket[i].bf.user_startStop == 0)
+							{
+								fryer.basket[i].bf.user_startStop = 1;
+								//
+								fryer.basket[i].cookCycle.bf.on = 1;
+
+							}
+							else
+							{
+								fryer.basket[i].bf.user_startStop = 0;
+								fryer.basket[i].cookCycle.bf.on = 0;
+								//load from eeprom
+								fryer.basket[i].cookCycle.time.min = time_k[i].min;
+								fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+								//return to decrementing timing
+								fryer.basket[i].cookCycle.counterTicks = 0x00;
+								fryer.basket[i].cookCycle.bf.forceCheckControl = 1;
+								fryer.basket[i].display.owner = DISPLAY_TIMING;
+								fryer.basket[i].display.bf.print_cookCycle = 1;
+								fryer.basket[i].cookCycle.bf.blinkDone = 0;
+								//
+								if (fryer.basket[i].display.bf.print_cookCycle == 1)
+								{
+									build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+									lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+									lcdan_print_string(str);
+								}
+							}
+						}
+
+						if ( ikb_key_is_ready2read(fryer.basket[i].kb.down) || ikb_key_is_ready2read(fryer.basket[i].kb.up) )
+						{
+							ikb_key_was_read(fryer.basket[i].kb.down);
+							ikb_key_was_read(fryer.basket[i].kb.up);
+
+							fryer.basket[i].display.bf.print_cookCycle = 0;
+
+							//solo muestra blinkeando el valor...
+							basket_temp[i].cookCycle.time.min = time_k[i].min;
+							basket_temp[i].cookCycle.time.sec = time_k[i].sec;
+							//++--
+							blink_reset(BLINK_TOGGLE_SET_BLANK);
+
+							fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
+							fryer.basket[i].display.owner = DISPLAY_EDITCOOKCYCLE;
+							//--++
+							fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
+
+							//change keyboard layout
+							kbmode_setEditCookCycle(&fryer.basket[i].kb);
+							fryer.basket[i].kb.mode = KBMODE_EDIT_COOKCYCLE;
 						}
 					}
-				}
-//				//+++++++++++++++++++++++++++++++++++++++++++++++++
-//				if (main_flag.f10ms)
-//				{
-//					blink_timing();
-//				}
-//				//+++++++++++++++++++++++++++++++++++++++++++++++++
-
-				if (fryer.basket[i].cookCycle.bf.on == 1)
-				{
-					if (main_flag.f10ms)
+					else if (fryer.basket[i].kb.mode == KBMODE_EDIT_COOKCYCLE)
 					{
-						if (++fryer.basket[i].cookCycle.timerCook == 100)
+						if (ikb_key_is_ready2read(fryer.basket[i].kb.down))
 						{
-							fryer.basket[i].cookCycle.timerCook = 0x00;
+							ikb_key_was_read(fryer.basket[i].kb.down);
+
+							time_dec(&basket_temp[i].cookCycle.time);
 							//
-							time_dec(&fryer.basket[i].cookCycle.time);
+							blink_reset(BLINK_TOGGLE_SET_TEXT);
+							fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
+						}
 
-							fryer.basket[i].cookCycle.bf.forceCheckControl = 1;
+						if (ikb_key_is_ready2read(fryer.basket[i].kb.up))
+						{
+							ikb_key_was_read(fryer.basket[i].kb.up);
 
-							if (fryer.basket[i].display.owner == DISPLAY_TIMING)
+							time_inc(&basket_temp[i].cookCycle.time);
+							//
+							blink_reset(BLINK_TOGGLE_SET_TEXT);
+							fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
+						}
+					}
+
+					//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+					if (fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive == 1)
+					{
+						//local blink - start
+						//update blink struct through blink_set(struct _blink *b)
+						if (fryer.basket[i].blink.bf.update)
+						{
+							fryer.basket[i].blink.bf.update = 0;
+							//
+							if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
 							{
-								fryer.basket[i].display.bf.print_cookCycle = 1;
+								strcpy(str,"     ");
 							}
+							else
+							{
+								build_cookCycle_string(&basket_temp[i].cookCycle.time, str);
+							}
+							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+							lcdan_print_string(str);
+							//
+						}
+						//local blink - end
+
+						if (mainflag.sysTickMs)
+						{
+							//Timeout : Limpiar teclas del basket correspodiente
+							if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
+							{
+								fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;
+
+								if (fryer.basket[i].cookCycle.bf.on == 1)
+								{
+									cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &time_k[i], &fryer.basket[i].cookCycle.time);
+									//return with fryer.basket[i].cookCycle.time UPDATED!
+								}
+								//update eeprom
+								time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+								//load from eeprom
+								fryer.basket[i].cookCycle.time.min = time_k[i].min;
+								fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+								//
+
+								fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 0;
+								//return to decrementing timing
+								fryer.basket[i].cookCycle.counterTicks = 0x00;//reset counter
+								fryer.basket[i].cookCycle.bf.forceCheckControl = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
+								fryer.basket[i].display.owner = DISPLAY_TIMING;
+								fryer.basket[i].display.bf.print_cookCycle = 1;
+								//
+								//clear all keys * solo por ahora seria startstop
+								ikb_key_was_read(fryer.basket[i].kb.startStop);
+								ikb_key_was_read(fryer.basket[i].kb.sleep);
+								//
+								kbmode_setDefault(&fryer.basket[i].kb);
+								fryer.basket[i].kb.mode = KBMODE_DEFAULT;
+								//
+							}
+						}
+					}
+					////+++++++++++++++++++++++++++++++++++++++++++++++++
+					//if (main_flag.f10ms)
+					//{
+					//blink_timing();
+					//}
+					////+++++++++++++++++++++++++++++++++++++++++++++++++
+
+					if (fryer.basket[i].cookCycle.bf.on == 1)
+					{
+						if (mainflag.sysTickMs)
+						{
+							if (++fryer.basket[i].cookCycle.counterTicks == 100)//update cada 1s
+							{
+								fryer.basket[i].cookCycle.counterTicks = 0x00;
+								//
+								time_dec(&fryer.basket[i].cookCycle.time);
+								fryer.basket[i].cookCycle.bf.forceCheckControl = 1;
+								if (fryer.basket[i].display.owner == DISPLAY_TIMING)
+								{
+									fryer.basket[i].display.bf.print_cookCycle = 1;
+								}
+								//
+							}
+						}
+						//
+						if (fryer.basket[i].cookCycle.bf.forceCheckControl == 1)
+						{
+							if (fryer.basket[i].cookCycle.time.sec == 0)
+							{
+								if (fryer.basket[i].cookCycle.time.min == 0)
+								{
+									fryer.basket[i].cookCycle.bf.on = 0;
+									//
+									//PinTo1(PORTWxBUZZER, PINxBUZZER);__delay_ms(15);PinTo0(PORTWxBUZZER, PINxBUZZER);
+									blink_reset(BLINK_TOGGLE_SET_TEXT);
+									fryer.basket[i].display.bf.print_cookCycle = 0;
+									fryer.basket[i].cookCycle.bf.blinkDone = 1;
+								}
+							}
+
+							fryer.basket[i].cookCycle.bf.forceCheckControl = 0x00;
+						}
+					}
+
+					//print timing decrement mm:ss
+					if (fryer.basket[i].display.owner == DISPLAY_TIMING)
+					{
+						if (fryer.basket[i].display.bf.print_cookCycle == 1)
+						{
+							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+							lcdan_print_string(str);
+							//
+							fryer.basket[i].display.bf.print_cookCycle = 0;
+						}
+						//blink
+						if (fryer.basket[i].cookCycle.bf.blinkDone == 1)
+						{
+							if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
+							{
+								strcpy(str,"     ");
+							}
+							else//BLINK_TOGGLE_SET_TEXT
+							{
+								strcpy(str,"DONE ");
+							}
+							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+							lcdan_print_string(str);
+
 						}
 					}
 					//
-					if (fryer.basket[i].cookCycle.bf.forceCheckControl == 1)
+					//+++++++++++++++++++++++++++++++++++++++++++++++++
+					if (mainflag.sysTickMs)
 					{
-						if (fryer.basket[i].cookCycle.time.sec == 0)
-						{
-							if (fryer.basket[i].cookCycle.time.min == 0)
-							{
-								fryer.basket[i].cookCycle.bf.on = 0;
-								//
-								//PinTo1(PORTWxBUZZER, PINxBUZZER);__delay_ms(15);PinTo0(PORTWxBUZZER, PINxBUZZER);
-								blink_reset(BLINK_TOGGLE_SET_TEXT);
-								fryer.basket[i].display.bf.print_cookCycle = 0;
-								fryer.basket[i].cookCycle.bf.blinkDone = 1;
-							}
-						}
-
-						fryer.basket[i].cookCycle.bf.forceCheckControl = 0x00;
+						blink_timing();
 					}
-				}
-
-				//print timing decrement mm:ss
-				if (fryer.basket[i].display.owner == DISPLAY_TIMING)
-				{
-					if (fryer.basket[i].display.bf.print_cookCycle == 1)
-					{
-						build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-						lcdan_print_string(str);
-						//
-						fryer.basket[i].display.bf.print_cookCycle = 0;
-					}
-					//blink
-					if (fryer.basket[i].cookCycle.bf.blinkDone == 1)
-					{
-						if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
-						{
-							strcpy(str,"     ");
-						}
-						else//BLINK_TOGGLE_SET_TEXT
-						{
-							strcpy(str,"DONE ");
-						}
-						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-						lcdan_print_string(str);
-
-					}
-				}
+					//+++++++++++++++++++++++++++++++++++++++++++++++++
+				}//for
 				//
-				//+++++++++++++++++++++++++++++++++++++++++++++++++
-				if (main_flag.f10ms)
+				if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 				{
-					blink_timing();
+					ikb_key_was_read(KB_LYOUT_PROGRAM);
+
+					fryer.psmode = PSMODE_PROGRAM;
+					fryer.ps_program = ps_reset;
+
 				}
-				//+++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
 			}
-		}						//switch OFF
-		else
+
+		}
+		else //switch OFF
 		{
 
 		}
 
 		//---------------------------
-		main_flag.f10ms = 0;
+		mainflag.sysTickMs = 0;
 	}
 
 	return 0;
@@ -867,7 +769,7 @@ int main(void)
 ISR(TIMER0_COMP_vect)
 {
 	//PinToggle(PORTC,0);
-	isr_flag.f10ms = 1;
+	isr_flag.sysTickMs = 1;
 }
 
 /*

@@ -4,23 +4,23 @@
  *  Created on: Dec 3, 2020
  *      Author: jcaf
  */
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
+
+#include "../main.h"
+#include "../MAX6675/MAX6675.h"
+#include "../smoothAlg/smoothAlg.h"
 #include "temperature.h"
 
 #ifdef MAX6675_UTILS_LCD_PRINT3DIG_C
 /*****************************************************
 Format with 3 digits 999C
 *****************************************************/
-void MAX6675_convertIntTmptr2str_wformatPrint3dig(int16_t temper, char *str_out)
+void MAX6675_formatText3dig(int16_t temper, char *str_out)
 {
     char buff[10];
 
-    if (temper< 0)
-    {
-        if (temper == -1)
-            {strcpy(str_out,"N.C ");}//4posit
+	if (temper == MAX6675_THERMOCOUPLED_OPEN)
+	{
+		strcpy(str_out,"N.C ");//4posit
         return;
     }
     else
@@ -50,6 +50,7 @@ void MAX6675_convertIntTmptr2str_wformatPrint3dig(int16_t temper, char *str_out)
 }
 #endif
 /*****************************************************
+
 *****************************************************/
 #ifdef MAX6675_UTILS_LCD_PRINTCOMPLETE_C
 void MAX6675_convertIntTmptr2str_wformatPrintComplete(int16_t temper, char *str_out)
@@ -89,3 +90,99 @@ void MAX6675_convertIntTmptr2str_wformatPrintComplete(int16_t temper, char *str_
 }
 #endif
 
+
+#define TEMPERATURE_SMOOTHALG_MAXSIZE 8
+static int16_t smoothVector[TEMPERATURE_SMOOTHALG_MAXSIZE];
+
+struct _smoothAlg smoothAlg_temp;
+const struct _smoothAlg smoothAlg_reset;
+
+int8_t MAX6675_accSamples(void)
+{
+	int16_t temperature12bits = MAX6675_get12bitsTemp();
+
+	//
+	if (temperature12bits == MAX6675_THERMOCOUPLED_OPEN)    //error cable disconnected ?
+	{
+		job_captureTemperature = job_reset;
+		smoothAlg_temp = smoothAlg_reset;
+
+		return MAX6675_THERMOCOUPLED_OPEN;//-1
+	}
+	else
+	{
+		smoothVector[job_captureTemperature.counter0] = temperature12bits;
+		if (++job_captureTemperature.counter0 >= TEMPERATURE_SMOOTHALG_MAXSIZE)
+		{
+			job_captureTemperature.counter0 = 0x00;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/*****************************************************
+
+*****************************************************/
+int8_t MAX6675_smoothAlg_nonblock_job(int16_t *TCtemperature)
+{
+	float smoothAnswer;
+
+	if (smoothAlg_nonblock(&smoothAlg_temp, smoothVector, TEMPERATURE_SMOOTHALG_MAXSIZE, &smoothAnswer))
+	{
+		if (smoothAnswer > 0)
+		{
+			*TCtemperature = ( (smoothAnswer * MAX6675_TMPR_MAX)/ (4095) )  + MAX6675_TEMPERATURE_DEVIATION;;
+		}
+		else
+		{
+			*TCtemperature = 0;
+		}
+		return 1;
+	}
+	return 0;
+}
+
+/*****************************************************
+
+*****************************************************/
+
+//float
+int TCtemperature;
+
+void temperature_job(void)
+{
+	static int8_t MAX6675_sm0;
+	static uint16_t MAX6675_ConversionTime_access;
+	int8_t MAX6675_job_rpta;
+
+	if (MAX6675_sm0 == 0)
+	{
+		if (mainflag.sysTickMs)
+		{
+			if (++MAX6675_ConversionTime_access == (uint16_t)(220.0f/SYSTICK_MS) ) //MAX6675 has max 0.22s
+			{
+				MAX6675_ConversionTime_access = 0;
+				//
+				MAX6675_job_rpta = MAX6675_accSamples();
+				if (MAX6675_job_rpta == MAX6675_THERMOCOUPLED_OPEN)
+				{
+					MAX6675_ConversionTime_access = 0;//reset the count with valid thermocouple value
+					TCtemperature = MAX6675_THERMOCOUPLED_OPEN;
+				}
+				else if (MAX6675_job_rpta == 1)//00..1024C
+				{
+					MAX6675_sm0++;
+				}
+			}
+		}
+	}
+	else
+	{
+			if (MAX6675_smoothAlg_nonblock_job(&TCtemperature))
+			{
+
+				MAX6675_sm0 = 0x00;
+			}
+	}
+}

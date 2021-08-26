@@ -46,8 +46,8 @@ void lcdan_set_cursor(int8_t x, int8_t y)
 {
     int8_t xy = LCDAN_BASEADDR_ROW_0;
 
-    if (y > LCD_ROW-1)
-        {y = LCD_ROW-1;}
+    if (y > LCDAN_ROW-1)
+        {y = LCDAN_ROW-1;}
 
     if (y == 0)
         xy = LCDAN_BASEADDR_ROW_0 + x;
@@ -68,8 +68,8 @@ int8_t lcdan_str_get_center_hor(const char *str)
     int8_t pos = 0;
     uint8_t length = strlen(str);
 
-    if (length < LCD_COL)
-        pos = (LCD_COL - length) >> 1; //2
+    if (length < LCDAN_COL)
+        pos = (LCDAN_COL - length) >> 1; //2
 
     return pos;
 }
@@ -108,8 +108,8 @@ void lcdan_str_lineformat_align(char *str_dest,  const char *str_src, int8_t pos
 
     pos_f = pos_i + strlen(str_src);
 
-    if (pos_f > LCD_COL)
-        pos_f = LCD_COL;//trunc to max pos= LCD_COL
+    if (pos_f > LCDAN_COL)
+        pos_f = LCDAN_COL;//trunc to max pos= LCD_COL
 
     x = 0;
     for (i = pos_i; i < pos_f; i++, x++)
@@ -130,10 +130,10 @@ void lcdan_str_lineformat_align_P(char *str_dest,  const char *str_src, int8_t p
 //todos los arrays/buffers q imprimen en LCD DEBEN DE SER >= LCD_COL+1
 void lcdan_str_lineformat_trimEOL3dots(char *str)
 {
-    str[LCD_COL-3] = '.';
-    str[LCD_COL-2] = '.';
-    str[LCD_COL-1] = '.';
-    str[LCD_COL] = '\0';
+    str[LCDAN_COL-3] = '.';
+    str[LCDAN_COL-2] = '.';
+    str[LCDAN_COL-1] = '.';
+    str[LCDAN_COL] = '\0';
 }
 
 

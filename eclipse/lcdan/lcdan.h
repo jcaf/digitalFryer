@@ -7,8 +7,8 @@
 #ifndef LCDAN_H
 #define	LCDAN_H
 
-#define LCD_ROW 2//4
-#define LCD_COL 16//20
+#define LCDAN_ROW 2//4
+#define LCDAN_COL 16//20
 
 //
 #define	LCDAN_DISP_ON_CURSOR_ON_BLINK_ON		0x0F
@@ -27,6 +27,7 @@
 #define LCDAN_BASEADDR_ROW_2 0x94
 #define LCDAN_BASEADDR_ROW_3 0xD4
 
+#include <stdint.h>
 void lcdan_write_cmd(uint8_t cmd);
 void lcdan_write_data(uint8_t data);
 void lcdan_init(void);

@@ -8,7 +8,160 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 	#include <stdint.h>
+	#include "types.h"
+	#include "system.h"
+	#include "lcdan/lcdan.h"
+	#include "lcdan/lcdan_aux.h"
+	#include "ikb/ikb.h"
+	#include "timing/timing.h"
+	#include "utils/utils.h"
+	#include "blink/blink.h"
+#include "MAX6675/MAX6675.h"
+	#include "Temperature/temperature.h"
+	#include "SPI/SPI.h"
 
+
+#define DISP_CURSOR_BASKETLEFT_START_X 0x00
+#define DISP_CURSOR_BASKETRIGHT_START_X 0x0B
+
+enum _PSMODE
+{
+	PSMODE_OPERATIVE,
+	PSMODE_PROGRAM,
+};
+
+enum E_KBMODE
+{
+	KBMODE_DEFAULT = 0,
+	KBMODE_EDIT_COOKCYCLE,
+	KBMODE_EDIT_TSETPOINT
+};
+enum DISPLAY_OWNER
+{
+	DISPLAY_TIMING = 0,
+	DISPLAY_EDITCOOKCYCLE,
+};
+
+
+
+struct _basket
+{
+	struct _display_basket
+	{
+		struct _cursor
+		{
+			int8_t x;
+			int8_t y;
+		}cursor;
+
+		struct _bf_display_basket
+		{
+			unsigned print_cookCycle :1;
+			unsigned __a:7;
+		}bf;
+
+		int8_t owner;
+	}display;
+
+	struct _kb_basket
+	{
+		int8_t startStop;
+		int8_t sleep;
+		int8_t down;
+		int8_t up;
+		//
+		int8_t mode;
+	} kb;
+
+	struct _cookCycle
+	{
+		struct _t time;
+		int8_t counterTicks;
+
+		struct _bf_cookCycle
+		{
+			unsigned on :1;
+			unsigned forceCheckControl :1;
+			unsigned blinkDone :1;
+			unsigned __a:5;
+		} bf;
+
+		struct _editcycle
+		{
+			int16_t timerTimeout;
+
+			struct _bf_editcycle
+			{
+				unsigned blinkIsActive :1;
+				unsigned __a:7;
+			} bf;
+
+		} editcycle;
+
+	} cookCycle;
+
+	struct _bf_basket
+	{
+		unsigned user_startStop:1;
+		unsigned __a:7;
+
+	}bf;
+
+	struct _blink blink;
+
+};
+
+#define BASKET_MAXSIZE 2
+#define BASKET_LEFT 0
+#define BASKET_RIGHT 1
+
+struct _process
+{
+	int8_t sm0;
+};
+
+
+struct _fryer
+{
+	struct _basket basket[BASKET_MAXSIZE];
+	//int8_t kb_mode;
+	int8_t psmode;
+
+	struct _process ps_program;
+	struct _process ps_operative;
+};
+extern const struct _process ps_reset;
+extern struct _fryer fryer;
+
+
+struct _job
+{
+	int8_t sm0;
+	uint16_t counter0;
+	//uint16_t counter1;
+
+	struct _job_f
+	{
+		unsigned enable:1;
+		unsigned job:1;
+		unsigned lock:1;
+		unsigned recorridoEnd:1;
+		unsigned __a:4;
+	}f;
+};
+extern struct _job job_captureTemperature;
+extern const struct _job job_reset;
+
+struct _mainflag
+{
+	unsigned sysTickMs :1;
+	unsigned __a:7;
+};
+extern struct _mainflag mainflag;
+
+#define SYSTICK_MS 10//10ms
+
+//////////////////////////////////////////
 	//Tiempos de Ignicion
 	#define TchispaIg 500//ms Tiempo de Chispa de igninicion
 	#define TdelayGasBurned 0//ms Tiempo prudente que puede demorar en prenderse el gas (Si es que lo existiera, sino seria 0)
