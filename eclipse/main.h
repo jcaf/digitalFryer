@@ -103,7 +103,8 @@ struct _basket
 	struct _bf_basket
 	{
 		unsigned user_startStop:1;
-		unsigned __a:7;
+		unsigned prepareReturnToKBDefault:1;
+		unsigned __a:6;
 
 	}bf;
 

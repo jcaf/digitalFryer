@@ -130,7 +130,7 @@ int8_t MAX6675_smoothAlg_nonblock_job(int16_t *TCtemperature)
 
 	if (smoothAlg_nonblock(&smoothAlg_temp, smoothVector, TEMPERATURE_SMOOTHALG_MAXSIZE, &smoothAnswer))
 	{
-		if (smoothAnswer > 0)
+		if (smoothAnswer > 0.0f)
 		{
 			*TCtemperature = ( (smoothAnswer * MAX6675_TMPR_MAX)/ (4095) )  + MAX6675_TEMPERATURE_DEVIATION;;
 		}
@@ -179,10 +179,9 @@ void temperature_job(void)
 	}
 	else
 	{
-			if (MAX6675_smoothAlg_nonblock_job(&TCtemperature))
-			{
-
-				MAX6675_sm0 = 0x00;
-			}
+		if (MAX6675_smoothAlg_nonblock_job(&TCtemperature))
+		{
+			MAX6675_sm0 = 0x00;
+		}
 	}
 }

@@ -23,5 +23,6 @@ int8_t MAX6675_job(void);
 int8_t MAX6675_smoothAlg_nonblock_job(int16_t *TCtemperature);
 
 extern int TCtemperature;
+void temperature_job(void);
 
 #endif /* TEMPERATURE_TEMPERATURE_H_ */
