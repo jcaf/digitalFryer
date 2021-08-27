@@ -248,7 +248,6 @@ int main(void)
 			{
 			}
 			//----------------------------------------------------
-			//desde aqui todo es compartido
 			if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 			{
 				ikb_key_was_read(KB_LYOUT_PROGRAM);
