@@ -9,5 +9,6 @@
 #define PSMODE_OPERATIVE_H_
 
 void psmode_operative(void);
+void psmode_operative_init(void);
 
 #endif /* PSMODE_OPERATIVE_H_ */

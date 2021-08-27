@@ -6,6 +6,11 @@
  */
 #include "main.h"
 
+#define BLINK_TIMER_KMAX (400/SYSTICK_MS)			//Xms/10ms de acceso
+#define EDITCYCLE_TIMERTIMEOUT_K (3000/SYSTICK_MS)	//5000ms/10ms
+
+
+
 //build to print Left time mm:ss
 void build_cookCycle_string(struct _t *t, char *str)
 {
@@ -71,13 +76,34 @@ void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *Tco
 	}
 }
 
-struct _basket basket_temp[BASKET_MAXSIZE];
+void psmode_operative_init(void)
+{
+	char str[20];
 
-
-char str[20];
+	//++--
+	for (int i=0; i<BASKET_MAXSIZE; i++)
+	{
+		fryer.basket[i].blink.timerBlink_K =  BLINK_TIMER_KMAX;
+		//
+		fryer.basket[i].cookCycle.time.min = time_k[i].min;
+		fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+		fryer.basket[i].display.owner = DISPLAY_TIMING;
+		fryer.basket[i].display.bf.print_cookCycle = 1;
+		//
+		if (fryer.basket[i].display.bf.print_cookCycle == 1)
+		{
+			build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+			lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+			lcdan_print_string(str);
+		}
+	}
+	//--+
+}
 
 void psmode_operative(void)
 {
+	struct _basket basket_temp[BASKET_MAXSIZE];
+	char str[20];
 	//
 	#define FRYER_COOKCYCLE_USER_STARTED 1
 	#define FRYER_COOKCYCLE_USER_STOPPED 0

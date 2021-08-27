@@ -59,35 +59,11 @@
  */
 
 #include "main.h"
-
 #include "pinGetLevel/pinGetLevel.h"
 #include "igDeteccFlama.h"
 #include "adc.h"
 #include "psmode_program.h"
-
-
-//Temperaturas
-int16_t Temper_Precalentamiento = 10;
-int16_t Temper_Coccion = 300;
-
-/////////////////////////////////////////
-
-void solenoideGasQuemadores_on(void)
-{
-
-}
-void solenoideGasQuemadores_off(void)
-{
-
-}
-void solenoideGasPiloto_on(void)
-{
-
-}
-void solenoideGasPiloto_off(void)
-{
-}
-
+#include "psmode_operative.h"
 
 
 volatile struct _isr_flag
@@ -95,29 +71,13 @@ volatile struct _isr_flag
 	unsigned sysTickMs :1;
 	unsigned __a :7;
 } isr_flag = { 0 };
-
-
 struct _mainflag mainflag;
-
-#define BLINK_TIMER_KMAX (400/SYSTICK_MS)			//Xms/10ms de acceso
-#define EDITCYCLE_TIMERTIMEOUT_K (3000/SYSTICK_MS)	//5000ms/10ms
 
 const struct _process ps_reset;
 struct _fryer fryer;
 
 struct _job job_captureTemperature;
 const struct _job job_reset;
-
-void chispero(void);
-
-/*
- * >> x=0:2*pi/16:2*pi
- * >> y=(sin(x)*127)+127
- */
-#define SENO_NUMPOINTS 16
-uint8_t seno[SENO_NUMPOINTS] = { 127, 176, 217, 244, 254, 244, 217, 176, 127,
-		78, 37, 10, 0, 10, 37, 78 };
-
 
 //k-load from EEPROM
 struct _t time_k[BASKET_MAXSIZE] = { {0, 5}, {0,10} };    //mm:ss
@@ -149,7 +109,7 @@ int main(void)
 	//--++
 
 	//Tiempo Necesario para estabilizar la tarjeta
-//	__delay_ms(2000);//estabilizar tarjeta de deteccion
+	//__delay_ms(2000);//estabilizar tarjeta de deteccion
 
 	//Active pull-up
 	PinTo1(PORTWxKB_KEY0, PINxKB_KEY0);
@@ -200,6 +160,7 @@ int main(void)
 	 TCCR0 = (1 << WGM01) | (0 << CS02) | (1 << CS01) | (0 << CS00); //CTC, PRES=8
 	 OCR0 = CTC_SET_OCR_BYTIME(62.5E-6, 8); //TMR8-BIT @16MHz @PRES=1024-> BYTIME maximum = 16ms
 	 */
+
 	//Config TRM2 PWM OC2 PIN (8-Bits)
 	//Prescaler = 1, No inverted OC2 pin
 	TCNT2 = 0;
@@ -213,85 +174,7 @@ int main(void)
 	sei();
 
 	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-
 	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
-
-	/*
-	 while (1)
-	 {
-	 PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-	 _delay_ms(1000);
-	 _delay_ms(1000);
-	 PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-	 _delay_ms(1000);
-	 _delay_ms(1000);
-	 _delay_ms(1000);
-	 _delay_ms(1000);
-	 }
-	 */
-
-#define FLAME_IS_ON 0
-#define FLAME_IS_OFF 1
-
-	/*
-	 while(1)
-	 {
-	 pinGetLevel_job();
-	 __delay_ms(20);
-
-	 if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_FLAME_DETECC))
-	 {
-	 lcdan_set_cursor(0, 0);
-	 //if has changed PGLEVEL_LYOUT_FLAME_DETECC, then read the level. After apply "pinGetLevel_clearChange"
-
-	 if (pinGetLevel_level(PGLEVEL_LYOUT_FLAME_DETECC)== FLAME_IS_ON)
-	 //if (PinRead(PORTRxFLAME_DETECC, PINxFLAME_DETECC) == FLAME_IS_ON)
-	 {
-	 lcdan_print_PSTRstring(PSTR("ON "));
-	 //
-	 PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-	 //
-	 __delay_ms(1500);
-	 PinTo1(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
-	 __delay_ms(2000);//en este tiempo sale con presion y puede generar un bajon en la deteccion
-	 }
-	 else
-	 {
-	 lcdan_print_PSTRstring(PSTR("OFF"));
-	 PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-	 //
-	 PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
-
-	 PinTo0(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
-	 }
-
-	 pinGetLevel_clearChange(PGLEVEL_LYOUT_FLAME_DETECC);
-	 }
-
-	 }
-	 */
-
-//while(1)
-//{
-//	flama = (ADC_read(ADC_CH_0)*5.0)/1023;
-//	lcdan_set_cursor(0, 0);
-//	if (flama > 2.0)
-//	{
-//		lcdan_print_PSTRstring(PSTR("ON "));
-//	}
-//	else
-//	{
-//		lcdan_print_PSTRstring(PSTR("OFF"));
-//	}
-//
-//	lcdan_set_cursor(0, 1);
-//	dtostrf(flama, 0,2, voltaje_flama);
-//	lcdan_print_string(voltaje_flama);
-//
-//	_delay_ms(100);
-//}
-	//
-	//ConfigOutputPin(DDRC,0);
 
 	while (1)
 	{
@@ -304,7 +187,7 @@ int main(void)
 		//----------------------
 		if (mainflag.sysTickMs)
 		{
-			if (++c == 2)    //20ms
+			if (++c == (20/SYSTICK_MS))    //20ms
 			{
 				c = 0;
 				//
@@ -317,7 +200,6 @@ int main(void)
 					if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)	//active in low
 					{
 						sm0 = 0x00;
-						//lcdan_print_PSTRstring(PSTR("3:00        3:00"));
 					}
 					else
 					{
@@ -325,7 +207,7 @@ int main(void)
 					}
 					pinGetLevel_clearChange(PGLEVEL_LYOUT_SWONOFF);
 				}
-				chispero();
+				//chispero();
 				ikb_job();
 			}
 		}
@@ -335,24 +217,6 @@ int main(void)
 		{
 			if (sm0 == 0)
 			{
-				for (int i=0; i<BASKET_MAXSIZE; i++)
-				{
-					fryer.basket[i].blink.timerBlink_K =  BLINK_TIMER_KMAX;
-					//+-
-					fryer.basket[i].cookCycle.time.min = time_k[i].min;
-					fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-					fryer.basket[i].display.owner = DISPLAY_TIMING;
-					fryer.basket[i].display.bf.print_cookCycle = 1;
-					//
-					if (fryer.basket[i].display.bf.print_cookCycle == 1)
-					{
-						build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-						lcdan_print_string(str);
-					}
-					//-+
-				}
-
 				igDeteccFlama_resetJob();
 				sm0++;
 			}
@@ -361,7 +225,7 @@ int main(void)
 				if (igDeteccFlama_doJob())
 				{
 					sm0++;    	//OK...Ignicion+deteccion de flama OK
-					//PID_Control -> setpoint = Tprecalentamiento
+								//PID_Control -> setpoint = Tprecalentamiento
 				}
 			}
 			else if (sm0 == 2)
@@ -374,31 +238,14 @@ int main(void)
 					_delay_ms(50);
 					PinTo0(PORTWxBUZZER, PINxBUZZER);
 
-					//buzzer beep + LCD +
-					//PID_Control -> setpoint = T
+					//buzzer beep + LCD + PID_Control -> setpoint = T
 
 					sm0++;
-					//++--
-					for (int i=0; i<BASKET_MAXSIZE; i++)
-					{
-						fryer.basket[i].cookCycle.time.min = time_k[i].min;
-						fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-						fryer.basket[i].display.owner = DISPLAY_TIMING;
-						fryer.basket[i].display.bf.print_cookCycle = 1;
-						//
-						if (fryer.basket[i].display.bf.print_cookCycle == 1)
-						{
-							build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
-							lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-							lcdan_print_string(str);
-						}
-					}
-					//--+
+					psmode_operative_init();
 				}
 			}
 			else if (sm0 == 3)
 			{
-
 			}
 			//----------------------------------------------------
 			//desde aqui todo es compartido
@@ -425,7 +272,6 @@ int main(void)
 			if (fryer.psmode == PSMODE_PROGRAM)
 			{
 				psmode_program();
-
 			}
 			else if (fryer.psmode == PSMODE_OPERATIVE)
 			{
@@ -446,30 +292,112 @@ int main(void)
 
 ISR(TIMER0_COMP_vect)
 {
-	//PinToggle(PORTC,0);
 	isr_flag.sysTickMs = 1;
+	//PinToggle(PORTC,0);
 }
 
 /*
- //ISR para generar la onda senoidal
- ISR(TIMER0_COMP_vect)
- {
- //	PinToggle(PORTWxOC2,PINxKB_OC2);
+//x=0:2*pi/16:2*pi
+//y=(sin(x)*127)+127
+#define SENO_NUMPOINTS 16
+uint8_t seno[SENO_NUMPOINTS] = { 127, 176, 217, 244, 254, 244, 217, 176, 127, 78, 37, 10, 0, 10, 37, 78 };
 
- // Si se usa el flag de desborde del TOV2, entonces cada 4 Overflows se escribe el DC
+//ISR para generar la onda senoidal
+ISR(TIMER0_COMP_vect)
+	{
+	//	PinToggle(PORTWxOC2,PINxKB_OC2);
 
- //update D.C = OCR2
+	// Si se usa el flag de desborde del TOV2, entonces cada 4 Overflows se escribe el DC
 
- static int8_t c;
+	//update D.C = OCR2
 
- if ( ++c >= 16)
- {
- c = 0;
- }
- OCR2 = seno[c];
- }
+	static int8_t c;
+
+	if ( ++c >= 16)
+	{
+	c = 0;
+	}
+	OCR2 = seno[c];
+}
+void solenoideGasQuemadores_on(void)
+{
+}
+void solenoideGasQuemadores_off(void)
+{
+}
+void solenoideGasPiloto_on(void)
+{
+}
+void solenoideGasPiloto_off(void)
+{
+}
+
+ while (1)
+{
+PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+_delay_ms(1000);
+_delay_ms(1000);
+PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+_delay_ms(1000);
+_delay_ms(1000);
+_delay_ms(1000);
+_delay_ms(1000);
+}
+#define FLAME_IS_ON 0
+#define FLAME_IS_OFF 1
+while (1)
+{
+	pinGetLevel_job();
+	__delay_ms(20);
+
+	if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_FLAME_DETECC))
+	{
+		lcdan_set_cursor(0, 0);
+		//if has changed PGLEVEL_LYOUT_FLAME_DETECC, then read the level. After apply "pinGetLevel_clearChange"
+
+		if (pinGetLevel_level(PGLEVEL_LYOUT_FLAME_DETECC) == FLAME_IS_ON)
+		//if (PinRead(PORTRxFLAME_DETECC, PINxFLAME_DETECC) == FLAME_IS_ON)
+		{
+			lcdan_print_PSTRstring(PSTR("ON "));
+			PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+			__delay_ms(1500);
+			PinTo1(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
+			__delay_ms(2000);//en este tiempo sale con presion y puede generar un bajon en la deteccion
+		}
+		else
+		{
+			lcdan_print_PSTRstring(PSTR("OFF"));
+			PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+			PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
+			PinTo0(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
+		}
+		pinGetLevel_clearChange(PGLEVEL_LYOUT_FLAME_DETECC);
+	}
+
+}
+while (1)
+{
+	flama = (ADC_read(ADC_CH_0) * 5.0) / 1023;
+	lcdan_set_cursor(0, 0);
+	if (flama > 2.0)
+	{
+		lcdan_print_PSTRstring(PSTR("ON "));
+	}
+	else
+	{
+		lcdan_print_PSTRstring(PSTR("OFF"));
+	}
+
+	lcdan_set_cursor(0, 1);
+	dtostrf(flama, 0, 2, voltaje_flama);
+	lcdan_print_string(voltaje_flama);
+
+	_delay_ms(100);
+}
+
+ConfigOutputPin(DDRC, 0);
+
  */
-
 void chispero(void)
 {
 	/*
@@ -488,9 +416,4 @@ void chispero(void)
 	 pinGetLevel_clearChange(PGLEVEL_LYOUT_CHISPERO);
 	 }
 	 */
-}
-//
-void duty()
-{
-
 }
