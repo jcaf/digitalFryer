@@ -176,6 +176,11 @@ int main(void)
 	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
 	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 
+	//x default en EEPROM
+	Tcoccion.TC = 300;	//F
+	Tcoccion.max = 390;	//390F-> 200C
+	Tcoccion.min = 50;	//200F-> 100C
+						//50F -> 10C
 	while (1)
 	{
 		if (isr_flag.sysTickMs)
@@ -237,9 +242,7 @@ int main(void)
 					PinTo1(PORTWxBUZZER, PINxBUZZER);
 					_delay_ms(50);
 					PinTo0(PORTWxBUZZER, PINxBUZZER);
-
 					//buzzer beep + LCD + PID_Control -> setpoint = T
-
 					sm0++;
 					psmode_operative_init();
 				}
@@ -247,26 +250,6 @@ int main(void)
 			else if (sm0 == 3)
 			{
 			}
-			//----------------------------------------------------
-			if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
-			{
-				ikb_key_was_read(KB_LYOUT_PROGRAM);
-
-//				if (++fryer.basket[i].kb.mode >= 3)
-//				{
-//					fryer.basket[i].kb.mode = 0x00;
-//				}
-				/*
-				 * 1st touch -> OIL (TEMPERATURA ACTUAL)
-				 * 2nd touch -> SET (TEMPERATURA DE MANTENIMIENTO)
-				 * 				USA LAS TECLAS DE LA DERECHA
-				 * 3th touch -> sale y muestra el tiempo
-				 *
-				 *SYSTEMMODE_OPERATIVE,
-				SYSTEMMODE_PROGRAM,
-				 */
-			}
-
 			//---------------------------------------------------
 			if (fryer.psmode == PSMODE_PROGRAM)
 			{

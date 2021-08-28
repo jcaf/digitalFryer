@@ -6,8 +6,8 @@
  */
 #include "main.h"
 
-#define BLINK_TIMER_KMAX (400/SYSTICK_MS)			//Xms/10ms de acceso
-#define EDITCYCLE_TIMERTIMEOUT_K (3000/SYSTICK_MS)	//5000ms/10ms
+#define PSMODE_OPERATIVE_BLINK_TIMER_KMAX (400/SYSTICK_MS)			//Xms/10ms de acceso
+#define PSMODE_OPERATIVE_EDITCYCLE_TIMERTIMEOUT_K (3000/SYSTICK_MS)	//5000ms/10ms
 
 
 
@@ -23,22 +23,7 @@ void build_cookCycle_string(struct _t *t, char *str)
 	paddingLeftwZeroes(buff, 2);
 	strcat(str, buff);
 }
-//void kbmode_setDefault(struct _kb_basket *kb)
-//{
-//	struct _key_prop key_prop = { 0 };
-//	key_prop = propEmpty;
-//	key_prop.uFlag.f.onKeyPressed = 1;
-//
-//	ikb_setKeyProp(kb->startStop ,key_prop);
-//	ikb_setKeyProp(kb->sleep,key_prop);
-//	ikb_setKeyProp(kb->down ,key_prop);
-//	ikb_setKeyProp(kb->up ,key_prop);
-//
-////	for (int i = 0; i < KB_NUM_KEYS; i++)
-////	{
-////		ikb_setKeyProp(i, prop);
-////	}
-//}
+
 void kbmode_setDefault1(struct _kb_basket *kb)
 {
 	struct _key_prop key_prop = { 0 };
@@ -54,22 +39,6 @@ void kbmode_setDefault1(struct _kb_basket *kb)
 	ikb_setKeyProp(kb->down ,key_prop);
 	ikb_setKeyProp(kb->up ,key_prop);
 }
-
-//void kbmode_setEditCookCycle(struct _kb_basket *kb)
-//{
-//	struct _key_prop key_prop = { 0 };
-//	key_prop = propEmpty;
-//	key_prop.uFlag.f.onKeyPressed = 1;
-//	key_prop.uFlag.f.reptt = 1;
-//	key_prop.numGroup = 0;
-//	key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
-//	key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
-//
-//	ikb_setKeyProp(kb->down, key_prop);
-//	ikb_setKeyProp(kb->up, key_prop);
-//	//ikb_setKeyProp(KB_LYOUT_LEFT_DOWN, key_prop);
-//	//ikb_setKeyProp(KB_LYOUT_LEFT_UP, key_prop);
-//}
 
 
 void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *TcookCycle_setPoint_current,struct _t *Tcookcycle_timingrunning)
@@ -101,12 +70,17 @@ void psmode_operative_init(void)
 	//++--
 	for (int i=0; i<BASKET_MAXSIZE; i++)
 	{
-		fryer.basket[i].blink.timerBlink_K =  BLINK_TIMER_KMAX;
+		fryer.basket[i].blink.timerBlink_K =  PSMODE_OPERATIVE_BLINK_TIMER_KMAX;
 		//
 
 		fryer.basket[i].cookCycle.time = time_k[i];
-		//fryer.basket[i].cookCycle.time.min = time_k[i].min;
-		//fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+		//carga desde la eeprom de manera temporal
+		basket_temp[i].cookCycle.time = time_k[i];
+
+
+		//return to visualizing decrement-timing
+		fryer.basket[i].cookCycle.counterTicks = 0x00;//reset counter
+		fryer.basket[i].cookCycle.bf.forceCheckControl = 1;//forzar pase directo para poder visualizar y actuar si es 00:00
 
 
 		fryer.basket[i].display.owner = DISPLAY_TIMING;
@@ -118,12 +92,10 @@ void psmode_operative_init(void)
 			lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
 			lcdan_print_string(str);
 		}
-		//carga desde la eeprom de manera temporal
-		basket_temp[i].cookCycle.time = time_k[i];
-		//basket_temp[i].cookCycle.time.min = time_k[i].min;
-		//basket_temp[i].cookCycle.time.sec = time_k[i].sec;
+
 		//
 		kbmode_setDefault1(&fryer.basket[i].kb);
+		fryer.basket[i].kb.mode = KBMODE_DEFAULT;
 	}
 	//--+
 }
@@ -264,7 +236,7 @@ void psmode_operative(void)
 				//Timeout : Limpiar teclas del basket correspodiente
 				//cancela blinking y espera a un user_Start
 
-				if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= EDITCYCLE_TIMERTIMEOUT_K)
+				if (++fryer.basket[i].cookCycle.editcycle.timerTimeout >= PSMODE_OPERATIVE_EDITCYCLE_TIMERTIMEOUT_K)
 				{
 					fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;
 					//
@@ -298,9 +270,6 @@ void psmode_operative(void)
 			//load from eeprom
 			fryer.basket[i].cookCycle.time = basket_temp[i].cookCycle.time;
 
-			//fryer.basket[i].cookCycle.time.min = time_k[i].min;
-			//fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
-
 
 			fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 0;
 			//return to visualizing decrement-timing
@@ -318,7 +287,7 @@ void psmode_operative(void)
 		{
 			if (mainflag.sysTickMs)
 			{
-				if (++fryer.basket[i].cookCycle.counterTicks == 100)//update cada 1s
+				if (++fryer.basket[i].cookCycle.counterTicks == (1000/SYSTICK_MS) )//update cada 1s
 				{
 					fryer.basket[i].cookCycle.counterTicks = 0x00;
 					//
@@ -382,6 +351,8 @@ void psmode_operative(void)
 		}
 		//
 		//+++++++++++++++++++++++++++++++++++++++++++++++++
+		//es necesario que este dentro del for() xq se cambia el puntero
+		//de la estructura correspondiente a cada canastilla
 		if (mainflag.sysTickMs)
 		{
 			blink_timing();
@@ -395,6 +366,15 @@ void psmode_operative(void)
 
 		fryer.psmode = PSMODE_PROGRAM;
 		fryer.ps_program = ps_reset;
+		fryer.ps_operative = ps_reset;
+		//
+		//Salir actualizando eeprom
+		for (int i=0; i<BASKET_MAXSIZE; i++)
+		{
+			time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+		}
+
+
 
 	}
 

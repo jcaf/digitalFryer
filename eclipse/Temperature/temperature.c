@@ -9,12 +9,13 @@
 #include "../MAX6675/MAX6675.h"
 #include "../smoothAlg/smoothAlg.h"
 #include "temperature.h"
+#include "../psmode_program.h"
 
 #ifdef MAX6675_UTILS_LCD_PRINT3DIG_C
 /*****************************************************
 Format with 3 digits 999C
 *****************************************************/
-void MAX6675_formatText3dig(int16_t temper, char *str_out)
+void MAX6675_formatText3dig_C(int16_t temper, char *str_out)
 {
     char buff[10];
 
@@ -45,6 +46,45 @@ void MAX6675_formatText3dig(int16_t temper, char *str_out)
         else
         {
             strncpy(&str_out[0], buff, 4);
+        }
+    }
+}
+#endif
+#ifdef MAX6675_UTILS_LCD_PRINT3DIG
+/*****************************************************
+Format with 4 digits 999 sin grados ni C
+*****************************************************/
+void MAX6675_formatText3dig(int16_t temper, char *str_out)
+{
+    char buff[10];
+
+	if (temper == MAX6675_THERMOCOUPLED_OPEN)
+	{
+		strcpy(str_out,"N.C");
+        return;
+    }
+    else
+    {
+        itoa(temper, buff, 10);//convierte
+
+        //3 positions to display
+        strcpy(str_out,"   ");
+
+        if (temper< 10)
+        {
+            strncpy(&str_out[2], buff, 1);
+        }
+        else if (temper<100)
+        {
+            strncpy(&str_out[1], buff, 2);
+        }
+        else if (temper<1000)
+        {
+            strncpy(&str_out[0], buff, 3);
+        }
+        else
+        {
+        	strcpy(str_out,"MAX");
         }
     }
 }
@@ -146,10 +186,7 @@ int8_t MAX6675_smoothAlg_nonblock_job(int16_t *TCtemperature)
 /*****************************************************
 
 *****************************************************/
-
-//float
 int TCtemperature;
-
 void temperature_job(void)
 {
 	static int8_t MAX6675_sm0;
@@ -164,6 +201,7 @@ void temperature_job(void)
 			{
 				MAX6675_ConversionTime_access = 0;
 				//
+
 				MAX6675_job_rpta = MAX6675_accSamples();
 				if (MAX6675_job_rpta == MAX6675_THERMOCOUPLED_OPEN)
 				{
@@ -179,8 +217,14 @@ void temperature_job(void)
 	}
 	else
 	{
-		if (MAX6675_smoothAlg_nonblock_job(&TCtemperature))
+		if (MAX6675_smoothAlg_nonblock_job( &TCtemperature ))
 		{
+			//Por defecto MAX6675 entrega en grados Celsius
+			if (pgrmode.bf.unitTemperature == FAHRENHEIT)
+			{
+				TCtemperature = (TCtemperature*(9.0f/5)) + 32;
+			}
+
 			MAX6675_sm0 = 0x00;
 		}
 	}

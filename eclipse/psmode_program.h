@@ -8,6 +8,15 @@
 #ifndef PSMODE_PROGRAM_H_
 #define PSMODE_PROGRAM_H_
 
+struct _Tcoccion
+{
+	int16_t TC;
+	int16_t min;
+	int16_t max;
+};
+extern struct _Tcoccion Tcoccion;
+
 void psmode_program(void);
+extern struct _pgrmmode pgrmode;
 
 #endif /* PSMODE_PROGRAM_H_ */

@@ -42,7 +42,17 @@ enum DISPLAY_OWNER
 	DISPLAY_EDITCOOKCYCLE,
 };
 
+struct _pgrmmode
+{
+	struct _pgrmmode_bf
+	{
+		unsigned unitTemperature:1;//Degrees Fahrenheit or Celsius
+		unsigned __a:7;//reserved
+	}bf;
+	int8_t numBaskets;//Default=1;
+	int8_t language;//Languages, default SPANISH
 
+};
 
 struct _basket
 {
@@ -110,7 +120,11 @@ struct _basket
 
 	struct _blink blink;
 
+
+
+
 };
+
 
 #define BASKET_MAXSIZE 2
 #define BASKET_LEFT 0
@@ -172,15 +186,10 @@ extern struct _t time_k[BASKET_MAXSIZE];
 	#define TdelayGasBurned 0//ms Tiempo prudente que puede demorar en prenderse el gas (Si es que lo existiera, sino seria 0)
 	//Tiempos de deteccion de llamas
 
-	//Tiempos de coccion y control
-	#define Tprecalentamiento
-	#define Tcoccion
-//	#define TmaxToEndCoccion
-//
 //	//Temperaturas
 //	#define TmprtPrecalentamiento
 //	#define TmprtCoccion
-#define TMPR_MAX 218//C i 425F -> E-5 = FRYER TOO HOT
+//#define TMPR_MAX 218//C i 425F -> E-5 = FRYER TOO HOT
 
 
 	//Constantes
@@ -194,7 +203,7 @@ extern struct _t time_k[BASKET_MAXSIZE];
 	/* C = (F-32)/1.8
 	 * F= (C*1.8) + 32
 	 */
-	enum TmprtUnits {Farenheith, Celsius};
+
 
 
 #define PORTWxSOL_GAS_QUEMADOR 		PORTC
