@@ -27,11 +27,20 @@ void build_cookCycle_string(struct _t *t, char *str)
 void kbmode_setDefault1(struct _kb_basket *kb)
 {
 	struct _key_prop key_prop = { 0 };
-	key_prop = propEmpty;
-	key_prop.uFlag.f.onKeyPressed = 1;
-	ikb_setKeyProp(kb->startStop ,key_prop);
-	ikb_setKeyProp(kb->sleep,key_prop);
 	//
+	key_prop = propEmpty;
+	//
+	key_prop.uFlag.f.onKeyPressed = 1;
+	ikb_setKeyProp(kb->sleep,key_prop);
+	ikb_setKeyProp(kb->startStop ,key_prop);
+	//
+	key_prop.uFlag.f.onKeyPressed = 0;
+	key_prop.uFlag.f.atTimeExpired2 = 1;
+	ikb_setKeyProp(kb->mode ,key_prop);//programacion
+	//
+	key_prop.uFlag.f.atTimeExpired2 = 0;
+	//
+	key_prop.uFlag.f.onKeyPressed = 1;
 	key_prop.uFlag.f.reptt = 1;
 	key_prop.numGroup = 0;
 	key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
@@ -364,17 +373,25 @@ void psmode_operative(void)
 	{
 		ikb_key_was_read(KB_LYOUT_PROGRAM);
 
-		fryer.psmode = PSMODE_PROGRAM;
-		fryer.ps_program = ps_reset;
-		fryer.ps_operative = ps_reset;
-		//
-		//Salir actualizando eeprom
-		for (int i=0; i<BASKET_MAXSIZE; i++)
+		if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
 		{
-			time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+			fryer.psmode = PSMODE_PROGRAM;
+			fryer.ps_program = ps_reset;
+			fryer.ps_operative = ps_reset;
+			//
+			struct _key_prop key_prop = { 0 };
+			key_prop = propEmpty;
+			key_prop.uFlag.f.onKeyPressed = 1;
+
+			//Salir actualizando eeprom
+			for (int i=0; i<BASKET_MAXSIZE; i++)
+			{
+				time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+				//
+				ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
+			}
+
 		}
-
-
 
 	}
 

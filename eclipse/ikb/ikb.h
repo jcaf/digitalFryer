@@ -25,7 +25,7 @@ Reglas:
     #define KB_KEY_PINLEVEL_RELEASED 1
     //
     #define _FIRE_AT_TIME_THRESHOLD_ (int)(ceil(1000.0/KB_PERIODIC_ACCESS))//in ms
-    #define _FIRE_AT_TIME_THRESHOLD2_ (int)(ceil(2000.0/KB_PERIODIC_ACCESS))//in ms
+    #define _FIRE_AT_TIME_THRESHOLD2_ (int)(ceil(1500.0/KB_PERIODIC_ACCESS))//in ms
     #define KB_BEFORE_THR	0
     #define KB_AFTER_THR	1
     //////////////////////////////////////////////////////////////////////////////////////

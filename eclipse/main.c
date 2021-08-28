@@ -94,6 +94,7 @@ int main(void)
 	fryer.basket[BASKET_LEFT].kb.sleep = KB_LYOUT_LEFT_SLEEP;
 	fryer.basket[BASKET_LEFT].kb.down = KB_LYOUT_LEFT_DOWN;
 	fryer.basket[BASKET_LEFT].kb.up = KB_LYOUT_LEFT_UP;
+	fryer.basket[BASKET_LEFT].kb.mode = KB_LYOUT_PROGRAM;//comun a ambos
 
 	fryer.basket[BASKET_LEFT].display.cursor.x = DISP_CURSOR_BASKETLEFT_START_X;//0x00;
 	fryer.basket[BASKET_LEFT].display.cursor.y = 0x00;
@@ -103,6 +104,7 @@ int main(void)
 	fryer.basket[BASKET_RIGHT].kb.sleep = KB_LYOUT_RIGHT_SLEEP;
 	fryer.basket[BASKET_RIGHT].kb.down = KB_LYOUT_RIGHT_DOWN;
 	fryer.basket[BASKET_RIGHT].kb.up = KB_LYOUT_RIGHT_UP;
+	fryer.basket[BASKET_RIGHT].kb.mode = KB_LYOUT_PROGRAM;//comun a ambos
 
 	fryer.basket[BASKET_RIGHT].display.cursor.x = DISP_CURSOR_BASKETRIGHT_START_X;//0x0B;
 	fryer.basket[BASKET_RIGHT].display.cursor.y = 0x00;
