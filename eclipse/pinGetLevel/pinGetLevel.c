@@ -113,6 +113,11 @@ void pinGetLevel_job(void)//non-block
                 	pinGetLevel[i].bf.level = level_temp;//pinGetLevel[i].bf.level_last;}
                 	pinGetLevel[i].bf.changed = 1;//clear in app-level
                 }
+                else
+                {
+                	pinGetLevel[i].bf.level_last = level_temp;
+                }
+
                 pinGetLevel[i].bf.sm0 = 0;
             }
 	    }

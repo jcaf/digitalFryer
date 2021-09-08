@@ -5,6 +5,7 @@
  *      Author: jcaf
  */
 #include "main.h"
+#include "indicator/indicator.h"
 
 #define PSMODE_OPERATIVE_BLINK_TIMER_KMAX (400/SYSTICK_MS)			//Xms/10ms de acceso
 #define PSMODE_OPERATIVE_EDITCYCLE_TIMERTIMEOUT_K (3000/SYSTICK_MS)	//5000ms/10ms
@@ -128,6 +129,12 @@ void psmode_operative(void)
 		if ((ikb_key_is_ready2read(fryer.basket[i].kb.down)) && (fryer.basket[i].cookCycle.bf.blinkDone == 0))
 		{
 			//ikb_key_was_read(fryer.basket[i].kb.down);
+			if (!ikb_inReptt(fryer.basket[i].kb.down))
+			{
+				indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+				indicator_On();
+			}
+
 			//
 			//
 			fryer.basket[i].display.bf.print_cookCycle = 0;
@@ -144,7 +151,11 @@ void psmode_operative(void)
 		if ((ikb_key_is_ready2read(fryer.basket[i].kb.up))  && (fryer.basket[i].cookCycle.bf.blinkDone == 0))
 		{
 			//ikb_key_was_read(fryer.basket[i].kb.up);
-			//
+			if (!ikb_inReptt(fryer.basket[i].kb.up))
+			{
+				indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+				indicator_On();
+			}
 			//
 			fryer.basket[i].display.bf.print_cookCycle = 0;
 			//fryer.basket[i].bf.user_startStop = FRYER_COOKCYCLE_USER_STOPPED;
@@ -167,6 +178,10 @@ void psmode_operative(void)
 			if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
 			{
 				ikb_key_was_read(fryer.basket[i].kb.startStop);
+				//
+				indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+				indicator_On();
+				//
 				//
 				if (fryer.basket[i].bf.user_startStop == FRYER_COOKCYCLE_USER_STOPPED)
 				{
@@ -369,8 +384,18 @@ void psmode_operative(void)
 		//+++++++++++++++++++++++++++++++++++++++++++++++++
 	}//for
 	//
+	//
+	if (ikb_getKeyStartPressed(KB_LYOUT_PROGRAM))
+	{
+		ikb_clearKeyStartPressed(KB_LYOUT_PROGRAM);
+		//
+		indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+		indicator_On();
+	}
+	//
 	if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 	{
+
 		ikb_key_was_read(KB_LYOUT_PROGRAM);
 
 		if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
@@ -390,7 +415,8 @@ void psmode_operative(void)
 				//
 				ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
 			}
-
+			indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+			indicator_On();
 		}
 
 	}

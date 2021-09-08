@@ -64,7 +64,7 @@
 #include "adc.h"
 #include "psmode_program.h"
 #include "psmode_operative.h"
-
+#include "indicator/indicator.h"
 
 volatile struct _isr_flag
 {
@@ -139,9 +139,8 @@ int main(void)
 	ConfigOutputPin(CONFIGIOxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 	//
 	ConfigOutputPin(CONFIGIOxBUZZER, PINxBUZZER);
-	PinTo1(PORTWxBUZZER, PINxBUZZER);
-	__delay_ms(5);
-	PinTo0(PORTWxBUZZER, PINxBUZZER);
+	indicator_setPortPin(&PORTWxBUZZER, PINxBUZZER);
+	indicator_setKSysTickTime_ms(75/SYSTICK_MS);
 
 	//PinTo1(PORTWxFLAME_DETECC, PINxFLAME_DETECC);//Active pull-up
 	//ConfigInputPin(PORTRxFLAME_DETECC, PINxFLAME_DETECC);
@@ -219,6 +218,7 @@ int main(void)
 			}
 		}
 		temperature_job();
+		indicator_job();
 		//
 		if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)
 		{
@@ -241,9 +241,6 @@ int main(void)
 
 				if (1)//(temper_measured >= Temper_Precalentamiento)
 				{
-					PinTo1(PORTWxBUZZER, PINxBUZZER);
-					_delay_ms(50);
-					PinTo0(PORTWxBUZZER, PINxBUZZER);
 					//buzzer beep + LCD + PID_Control -> setpoint = T
 					sm0++;
 					psmode_operative_init();
@@ -273,11 +270,26 @@ int main(void)
 
 	return 0;
 }
+/*
+Para evitar cargar de ejecuciones de mult/div
+mejor escojo la kte directamente
+*/
+#define TB_NUM_OPTIONS 3		//TiempoBase
+int8_t 	TB_IDX = 0;					//La opcion, solo 3: 0,1,2
+int8_t 	TB_KDIV_1S[TB_NUM_OPTIONS] = {1,2,4};
+uint16_t TB_KMAX[TB_NUM_OPTIONS]={1000,500,250};//en milisegundos
 
 ISR(TIMER0_COMP_vect)
 {
 	isr_flag.sysTickMs = 1;
 	//PinToggle(PORTC,0);
+
+	static uint16_t TB_counter;
+	if (++TB_counter >= TB_KMAX[TB_IDX])
+	{
+		TB_counter = 0x00;
+		PWMSoft_control();
+	}
 }
 
 /*

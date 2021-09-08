@@ -23,7 +23,10 @@ Reglas:
     //scan hardware
     #define KB_KEY_PINLEVEL_PRESSED 0
     #define KB_KEY_PINLEVEL_RELEASED 1
-    //
+	//set by software
+	#define KB_KEY_STATE_PRESSED 1
+	#define KB_KEY_STATE_RELEASED 0
+	//
     #define _FIRE_AT_TIME_THRESHOLD_ (int)(ceil(1000.0/KB_PERIODIC_ACCESS))//in ms
     #define _FIRE_AT_TIME_THRESHOLD2_ (int)(ceil(1500.0/KB_PERIODIC_ACCESS))//in ms
     #define KB_BEFORE_THR	0
@@ -196,6 +199,11 @@ Reglas:
     void ikb_set_ready2read(uint8_t k);
     void ikb_key_was_read(uint8_t k);
     void ikb_execfunct(uint8_t k);
+
+    int8_t ikb_getKeyState(int8_t k);
+    int8_t ikb_inReptt(int8_t k);
+    int8_t ikb_getKeyStartPressed(int8_t k);
+    void ikb_clearKeyStartPressed(int8_t k);
 
     //void ikb_processKeyRead_D(void);
     //void kb_change_keyDo(const PTRFX_retVOID const *keyDo);

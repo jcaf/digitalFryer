@@ -20,7 +20,8 @@ struct _key
         unsigned atTimeExpired_beforeOrAfter:1;
         unsigned ownerOfGroup:1;
         unsigned inProcessing:1;
-        unsigned __a:3;
+        unsigned startPress:1;
+        unsigned __a:2;
     }statusFlag;
 };
 
@@ -332,11 +333,24 @@ void ikb_execfunct(uint8_t k)
 {
     key[k].keyDo();
 }
+//#define KB_KEY_STATE_PRESSED 1
+//#define KB_KEY_STATE_RELEASED 0
+int8_t ikb_getKeyState(int8_t k)
+{
+	return key[k].statusFlag.state;
+}
+
+int8_t ikb_getKeyStartPressed(int8_t k)
+{
+	return key[k].statusFlag.startPress;
+}
+void ikb_clearKeyStartPressed(int8_t k)
+{
+	key[k].statusFlag.startPress = 0;
+}
 
 /************* ikey ****************/
-//set by software
-#define KB_KEY_STATE_PRESSED 1
-#define KB_KEY_STATE_RELEASED 0
+
 
 #define IKEY_SCAN_SETUP_TIMEuS 5//us
 
@@ -445,6 +459,14 @@ enum _STAGE_
     _STAGE_END_PARSING_,
 };
 
+int8_t ikb_inReptt(int8_t k)
+{
+	if (key[k].sm1 == _STAGE_REPTT_)
+		return 0;
+	else
+		return 1;
+}
+
 void ikey_parsing(void)
 {
     uint8_t k;
@@ -486,6 +508,8 @@ void ikey_parsing(void)
                     else if (key[k].prop.uFlag.f.atTimeExpired2)
                     {
                         key[k].sm1 = _STAGE_FIREATIMEEXPIRED_2_;
+                        //added 2021
+                        key[k].statusFlag.startPress = 1;//clear in app if necessary
                     }
 
                     //Add++

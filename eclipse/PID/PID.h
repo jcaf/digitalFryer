@@ -2,7 +2,8 @@
 #define PID_H_
 
 //#define PID_CONTROL_OUTPUT_MAX 120
-#define PID_CONTROL_OUTPUT_MAX 100//ahora 100*20ms = 2s 120
+#define PID_OUTPUT_MIN 0//ahora 100*20ms = 2s 120
+#define PID_OUTPUT_MAX 100//ahora 100*20ms = 2s 120
 
 void PID_init(void);
 void PID_reset_errors(void);

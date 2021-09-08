@@ -171,10 +171,10 @@ int16_t PID_control(int16_t pv)
     PID_output = (PID.K_proportional*error)+(PID.K_integral*PID.error_integral)+(PID.K_derivative*PID.error_derivative);
 
 
-    if(PID_output > PID_CONTROL_OUTPUT_MAX)
-        {PID_output = PID_CONTROL_OUTPUT_MAX;}
-    else if(PID_output < 0)
-        {PID_output = 0;}
+    if(PID_output > PID_OUTPUT_MAX)
+        {PID_output = PID_OUTPUT_MAX;}
+    else if(PID_output < PID_OUTPUT_MIN)
+        {PID_output = PID_OUTPUT_MIN;}
 
     //
     return PID_output;
@@ -184,8 +184,7 @@ int16_t PID_control(int16_t pv)
 PID_control_output call from ISR
 *****************************************************/
 #define PWM_BASETIME_COUNTER_MAX 1//xdirectamente cada 20ms
-#define PWM_PERIOD_COUNTER_MAX PID_CONTROL_OUTPUT_MAX //100
-
+#define PWM_PERIOD_COUNTER_MAX PID_OUTPUT_MAX //100
 
 /*
 //void pwm_dutycycle_kstop(int PID)
@@ -199,22 +198,62 @@ void pwm_dutycycle_kstop(float PID)
 //    dutycyle_ = (PID_porcentage) * PWM_PERIOD_COUNTER_MAX;
 //}
 
-/*
-Cada nuevo periodo se carga un nuevo duty cyle
-*/
-void PWMSoft_control()//cada 1 segundo
+
+
+void PWMSoft_control()
 {
     PWMSoft.dc.counter++;
 
-    if (PWMSoft.dc.counter >= PWMSoft.dc.TOP)
+    int8_t KFRYER_ON_SEG = 6; //6s total de encedido
+    int8_t KFRYER_OFF_SEG = 2; //2s total de encedido
+
+    static int8_t sm0;
+
+    if (PWMSoft.dc.TOP > 0)
     {
-        if (PWMSoft.dc.TOP < PWMSoft.period)
-            {
-        	//PinTo0();
-            }
+    	PWMSoft.dc.counter++;
+    	if (sm0 == 0)
+    	{
+    		//KFRYER_ON_SEG expresado en segundos
+			if (PWMSoft.dc.counter >= (KFRYER_ON_SEG* TB_KDIV_1S[TB_IDX]) )//afectado por DKIV_1S
+			{
+				PWMSoft.dc.counter = 0;
+				sm0++;
+			}
+    	}
+    	else if (sm0 == 1)
+    	{
+    		if (PWMSoft.dc.counter >= PID_OUTPUT_MAX* TB_KDIV_1S[TB_IDX])
+    		{
+//    			if (PWMSoft.dc.TOP < PWMSoft.period)
+//    			            {
+//    			        	//PinTo0();
+//    			            }
+
+    			if (PWMSoft.dc.TOP >= PID_OUTPUT_MAX* TB_KDIV_1S[TB_IDX])
+    			{
+    				sm0 =0; //la freq. del PWM no considera KFRYER_OFF
+    			}
+    			else
+    			{
+    				sm0++;
+    			}
+
+    		}
+    	}
+    	else if (sm0 == 2)//Solo si es menor que 10...para que haya espacio
+    	{
+    		//KFRYER_OFF_SEG expresado en segundos
+    		if (PWMSoft.dc.counter >= (KFRYER_OFF_SEG* TB_KDIV_1S[TB_IDX]) )//afectado por DKIV_1S
+			{
+				PWMSoft.dc.counter = 0;
+				sm0 = 0;
+			}
+    	}
     }
 
-    if (PWMSoft.dc.counter >= PWMSoft.period)//max 255
+    //
+    if (PWMSoft.dc.counter >= K)//Fin de periodo
     {
         PWMSoft.dc.counter = 0;
         PWMSoft.dc.TOP = PWMSoft.dc.TOP_buff;

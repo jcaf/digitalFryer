@@ -8,6 +8,7 @@
 #include "psmode_program.h"
 #include "psmode_operative.h"
 #include "Temperature/temperature.h"
+#include "indicator/indicator.h"
 
 #define PSMODE_PROGRAM_BLINK_TIMER_KMAX (400/SYSTICK_MS)//Xms/10ms de acceso
 static struct _blink blink;
@@ -61,6 +62,13 @@ void psmode_program(void)
 			{
 				ikb_key_was_read(fryer.basket[i].kb.down);
 				//
+				if (!ikb_inReptt(fryer.basket[i].kb.down))
+				{
+					indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+					indicator_On();
+				}
+				//
+
 				blink_reset(BLINK_TOGGLE_SET_TEXT);
 
 				if (--Tcoccion.TC <= Tcoccion.min)
@@ -72,6 +80,13 @@ void psmode_program(void)
 			{
 				ikb_key_was_read(fryer.basket[i].kb.up);
 				//
+				if (!ikb_inReptt(fryer.basket[i].kb.up))
+				{
+					indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+					indicator_On();
+				}
+				//
+
 				blink_reset(BLINK_TOGGLE_SET_TEXT);
 
 				if (++Tcoccion.TC >= Tcoccion.max)
@@ -126,6 +141,8 @@ void psmode_program(void)
 
 			blinkIsActive = 0;
 		}
+		indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+		indicator_On();
 	}
 	//
 	//+++++++++++++++++++++++++++++++++++++++++++++++++
