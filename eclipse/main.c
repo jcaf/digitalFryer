@@ -56,6 +56,14 @@
  (ignorar el error de 0x3C... pues los 2 bits de mayor peso no estan implentados)
 
 
+The most important thing here is consistency. That said, I follow the GTK+ coding convention, which can be summarized as follows:
+
+All macros and constants in caps: MAX_BUFFER_SIZE, TRACKING_ID_PREFIX.
+Struct names and typedef's in camelcase: GtkWidget, TrackingOrder.
+Functions that operate on structs: classic C style: gtk_widget_show(), tracking_order_process().
+Pointers: nothing fancy here: GtkWidget *foo, TrackingOrder *bar.
+Global variables: just don't use global variables. They are evil.
+Functions that are there, but shouldn't be called directly, or have obscure uses, or whatever: one or more underscores at the beginning: _refrobnicate_data_tables(), _destroy_cache().
  */
 
 #include "main.h"
@@ -65,6 +73,7 @@
 #include "psmode_program.h"
 #include "psmode_operative.h"
 #include "indicator/indicator.h"
+#include "PID/PID.h"
 
 volatile struct _isr_flag
 {
@@ -264,32 +273,29 @@ int main(void)
 
 		}
 
-		//---------------------------
+		/* PID control */
+		PWMSoft_control();
+
+		/* ---------- */
 		mainflag.sysTickMs = 0;
 	}
 
 	return 0;
 }
-/*
-Para evitar cargar de ejecuciones de mult/div
-mejor escojo la kte directamente
-*/
-#define TB_NUM_OPTIONS 3		//TiempoBase
-int8_t 	TB_IDX = 0;					//La opcion, solo 3: 0,1,2
-int8_t 	TB_KDIV_1S[TB_NUM_OPTIONS] = {1,2,4};
-uint16_t TB_KMAX[TB_NUM_OPTIONS]={1000,500,250};//en milisegundos
 
 ISR(TIMER0_COMP_vect)
 {
 	isr_flag.sysTickMs = 1;
 	//PinToggle(PORTC,0);
 
-	static uint16_t TB_counter;
-	if (++TB_counter >= TB_KMAX[TB_IDX])
+
+	/*
+	if (++TB.counter0 >= TB.kmax_ms[TB.idx])
 	{
-		TB_counter = 0x00;
+		TB.counter0 = 0x00;
 		PWMSoft_control();
 	}
+	*/
 }
 
 /*
