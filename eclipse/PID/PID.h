@@ -3,17 +3,11 @@
 
 void PID_init(void);
 void PID_reset_errors(void);
-int16_t PID_control(int16_t pv);
-void PID_set_setpoint(int16_t sp);
+int16_t pid_control(int16_t pv);
+void pid_set_sp(int16_t sp);
 int16_t PID_get_setpoint(void);
 void PID_control_output(uint8_t pwm_dutycycle);
 void PWMSoft_control(void);
-
-/*
- * Esta es la base, pero puede ser reescalado por un factor >1
- */
-#define PID_OUTPUT_MIN 0
-#define PID_OUTPUT_MAX 10
 
 //2021
 /*
@@ -27,17 +21,6 @@ mejor escojo la kte directamente
 
 
 #define TB_NUM_OPTIONS 3		//TiempoBase
-struct _TimeBasePID
-{
-		int8_t sm0;
-		int8_t idx;
-		int8_t factor_reescala_pid;
-		int8_t kdiv_1s[TB_NUM_OPTIONS];
-		int8_t toff_adicional_seg;
-		//
-		uint16_t counter0;
-		uint16_t kmax_ms[TB_NUM_OPTIONS];
-};
 
-extern volatile struct _TimeBasePID TB;
+//extern volatile struct _TimeBasePID TB;
 #endif // PID_H_

@@ -7,18 +7,19 @@
 
 #ifndef MAIN_H_
 #define MAIN_H_
-	#include <stdint.h>
-	#include "types.h"
-	#include "system.h"
-	#include "lcdan/lcdan.h"
-	#include "lcdan/lcdan_aux.h"
-	#include "ikb/ikb.h"
-	#include "timing/timing.h"
-	#include "utils/utils.h"
-	#include "blink/blink.h"
+
+#include <stdint.h>
+#include "types.h"
+#include "system.h"
+#include "lcdan/lcdan.h"
+#include "lcdan/lcdan_aux.h"
+#include "ikb/ikb.h"
+#include "timing/timing.h"
+#include "utils/utils.h"
+#include "blink/blink.h"
 #include "MAX6675/MAX6675.h"
-	#include "Temperature/temperature.h"
-	#include "SPI/SPI.h"
+#include "Temperature/temperature.h"
+#include "SPI/SPI.h"
 
 
 #define DISP_CURSOR_BASKETLEFT_START_X 0x00
@@ -44,85 +45,81 @@ enum DISPLAY_OWNER
 
 struct _pgrmmode
 {
-	struct _pgrmmode_bf
-	{
-		unsigned unitTemperature:1;//Degrees Fahrenheit or Celsius
-		unsigned __a:7;//reserved
-	}bf;
-	int8_t numBaskets;//Default=1;
-	int8_t language;//Languages, default SPANISH
+		struct _pgrmmode_bf
+		{
+				unsigned unitTemperature:1;//Degrees Fahrenheit or Celsius
+				unsigned __a:7;//reserved
+		}bf;
+		int8_t numBaskets;//Default=1;
+		int8_t language;//Languages, default SPANISH
 
 };
 
 struct _basket
 {
-	struct _display_basket
-	{
-		struct _cursor
+		struct _display_basket
 		{
-			int8_t x;
-			int8_t y;
-		}cursor;
+				struct _cursor
+				{
+						int8_t x;
+						int8_t y;
+				}cursor;
 
-		struct _bf_display_basket
+				struct _bf_display_basket
+				{
+						unsigned print_cookCycle :1;
+						unsigned __a:7;
+				}bf;
+
+				int8_t owner;
+		}display;
+
+		struct _kb_basket
 		{
-			unsigned print_cookCycle :1;
-			unsigned __a:7;
+				int8_t startStop;
+				int8_t sleep;
+				int8_t down;
+				int8_t up;
+				//
+				int8_t mode;
+		} kb;
+
+		struct _cookCycle
+		{
+				struct _t time;
+				int8_t counterTicks;
+
+				struct _bf_cookCycle
+				{
+						unsigned on :1;
+						unsigned forceCheckControl :1;
+						unsigned blinkDone :1;
+						unsigned __a:5;
+				} bf;
+
+				struct _editcycle
+				{
+						int16_t timerTimeout;
+
+						struct _bf_editcycle
+						{
+								unsigned blinkIsActive :1;
+								unsigned __a:7;
+						} bf;
+
+				} editcycle;
+
+		} cookCycle;
+
+		struct _bf_basket
+		{
+				unsigned user_startStop:1;
+				unsigned prepareReturnToKBDefault:1;
+				unsigned __a:6;
+
 		}bf;
 
-		int8_t owner;
-	}display;
-
-	struct _kb_basket
-	{
-		int8_t startStop;
-		int8_t sleep;
-		int8_t down;
-		int8_t up;
-		//
-		int8_t mode;
-	} kb;
-
-	struct _cookCycle
-	{
-		struct _t time;
-		int8_t counterTicks;
-
-		struct _bf_cookCycle
-		{
-			unsigned on :1;
-			unsigned forceCheckControl :1;
-			unsigned blinkDone :1;
-			unsigned __a:5;
-		} bf;
-
-		struct _editcycle
-		{
-			int16_t timerTimeout;
-
-			struct _bf_editcycle
-			{
-				unsigned blinkIsActive :1;
-				unsigned __a:7;
-			} bf;
-
-		} editcycle;
-
-	} cookCycle;
-
-	struct _bf_basket
-	{
-		unsigned user_startStop:1;
-		unsigned prepareReturnToKBDefault:1;
-		unsigned __a:6;
-
-	}bf;
-
-	struct _blink blink;
-
-
-
-
+		struct _blink blink;
 };
 
 
@@ -132,18 +129,18 @@ struct _basket
 
 struct _process
 {
-	int8_t sm0;
+		int8_t sm0;
 };
 
 
 struct _fryer
 {
-	struct _basket basket[BASKET_MAXSIZE];
-	//int8_t kb_mode;
-	int8_t psmode;
+		struct _basket basket[BASKET_MAXSIZE];
+		//int8_t kb_mode;
+		int8_t psmode;
 
-	struct _process ps_program;
-	struct _process ps_operative;
+		struct _process ps_program;
+		struct _process ps_operative;
 };
 extern const struct _process ps_reset;
 extern struct _fryer fryer;
@@ -151,26 +148,26 @@ extern struct _fryer fryer;
 
 struct _job
 {
-	int8_t sm0;
-	uint16_t counter0;
-	//uint16_t counter1;
+		int8_t sm0;
+		uint16_t counter0;
+		//uint16_t counter1;
 
-	struct _job_f
-	{
-		unsigned enable:1;
-		unsigned job:1;
-		unsigned lock:1;
-		unsigned recorridoEnd:1;
-		unsigned __a:4;
-	}f;
+		struct _job_f
+		{
+				unsigned enable:1;
+				unsigned job:1;
+				unsigned lock:1;
+				unsigned recorridoEnd:1;
+				unsigned __a:4;
+		}f;
 };
 extern struct _job job_captureTemperature;
 extern const struct _job job_reset;
 
 struct _mainflag
 {
-	unsigned sysTickMs :1;
-	unsigned __a:7;
+		unsigned sysTickMs :1;
+		unsigned __a:7;
 };
 extern struct _mainflag mainflag;
 
@@ -181,10 +178,10 @@ extern struct _t time_k[BASKET_MAXSIZE];
 
 
 //////////////////////////////////////////
-	//Tiempos de Ignicion
-	#define TchispaIg 500//ms Tiempo de Chispa de igninicion
-	#define TdelayGasBurned 0//ms Tiempo prudente que puede demorar en prenderse el gas (Si es que lo existiera, sino seria 0)
-	//Tiempos de deteccion de llamas
+//Tiempos de Ignicion
+#define TchispaIg 500//ms Tiempo de Chispa de igninicion
+#define TdelayGasBurned 0//ms Tiempo prudente que puede demorar en prenderse el gas (Si es que lo existiera, sino seria 0)
+//Tiempos de deteccion de llamas
 
 //	//Temperaturas
 //	#define TmprtPrecalentamiento
@@ -192,17 +189,17 @@ extern struct _t time_k[BASKET_MAXSIZE];
 //#define TMPR_MAX 218//C i 425F -> E-5 = FRYER TOO HOT
 
 
-	//Constantes
-	#define KintentosIg 3//intentos de ignicion
+//Constantes
+#define KintentosIg 3//intentos de ignicion
 
-	//Alarmas
-	#define CodeAlerta0
-	#define CodeAlerta1
+//Alarmas
+#define CodeAlerta0
+#define CodeAlerta1
 
 
-	/* C = (F-32)/1.8
-	 * F= (C*1.8) + 32
-	 */
+/* C = (F-32)/1.8
+ * F= (C*1.8) + 32
+ */
 
 
 
@@ -237,7 +234,6 @@ extern struct _t time_k[BASKET_MAXSIZE];
 #define PINxFLAME_DETECC			0
 
 
-
 //ikey layout
 #define KB_LYOUT_LEFT_STARTSTOP 0
 #define KB_LYOUT_LEFT_SLEEP 1
@@ -252,11 +248,11 @@ extern struct _t time_k[BASKET_MAXSIZE];
 #define KB_LYOUT_RIGHT_STARTSTOP 8	//5
 
 
-
-	//
-
-
-
+/*
+ *
+ */
+int8_t KFRYER_ON_SEG = 6; //6s total de encedido
+int8_t KFRYER_OFF_SEG = 2; //2s total de encedido
 
 
 #endif /* MAIN_H_ */

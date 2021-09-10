@@ -2,183 +2,90 @@
 #include "../main.h"
 
 #include "PID.h"
-//#include "../usart/usart.h"
-struct _PWMSoft
-{
-	struct _dc
-	{
-		uint8_t TOP;
-		uint8_t TOP_buff;
-		uint8_t counter;
-	} dc;
-	uint16_t period;
+#define PID_OUTPUT_MIN 0
+#define PID_OUTPUT_MAX 10
 
-} PWMSoft;
-
-struct _PID
+struct TimeBasePID
 {
-	//int16_t initial_error;
-	int16_t setpoint;
+	int8_t sm0;
+	uint16_t counter0;
+	int8_t factor_escala;
 	//
-	//    int16_t K_proportional;// = 40;
-	//    int16_t K_integral;// = 10;
-	//    int16_t K_derivative;// = 0;
-	float K_proportional;// = 40;
-	float K_integral;// = 10;
-	float K_derivative;// = 0;
-	//
-	int16_t error_integral;
-	int16_t previous_error;
-	int16_t error_derivative;
+	/* estas variables debo de separlos*/
+	int8_t toff_adicional_seg;
+	int8_t idx;
+	int8_t kdiv_1s[TB_NUM_OPTIONS];
+	uint16_t kmax_ms[TB_NUM_OPTIONS];
 };
 
-struct _PID PID;
+struct DutyCycle
+{
+	uint8_t ktop;
+	uint8_t ktop_buff;
+	uint8_t counter;
+} dc;
 
-/*****************************************************
- *****************************************************/
-void PID_set_setpoint(int16_t sp)
+struct Ctrl
 {
-	PID.setpoint = sp;
-}
-int16_t PID_get_setpoint(void)
+	int16_t sp;			/* set point */
+	float kp;
+	float ki;
+	float kd;
+	//
+	int16_t ei; 		/* error integral */
+	int16_t eprevio;	/* error previo */
+	int16_t ed;			/* error derivativo	*/
+	//
+	int8_t kei_windup_max;	/* max windup for error integral */
+	int8_t kei_windup_min;	/* min windup for error integral */
+};
+
+struct PID
 {
-	return PID.setpoint;
-}
-void PID_reset_errors(void)
+	struct Ctrl ctrl;
+	struct PWM
+	{
+		struct DutyCycle dc;
+		struct TimeBasePID tb;
+	}pwm;
+
+}pid;
+
+/*
+ *
+ */
+pid_control
+set_pid
 {
-	//PID.initial_error = PID.setpoint - temper_measured;
-	PID.error_integral = 0;
-	PID.previous_error = 0;
+
 }
 
-void PID_init(void)//cambiar de nombre
-{
-	PID_reset_errors();
-
-	PID.K_proportional = 1.2;
-	PID.K_integral = 1.45;
-	PID.K_derivative = 1;//
-}
-/*****************************************************
- *****************************************************/
-#define PID_CONTROL_DEBUG
-int16_t PID_control(int16_t pv)
+int16_t pid_control(int16_t pv)
 {
 	int16_t error;
-	int16_t PID_output;
-	int8_t _pid_integral_windup;
+	int16_t pid_out;
 
-	error = PID.setpoint - pv;
-
-	PID.error_integral = PID.error_integral + error;
-
-	if (error > 25)
-	{
-		_pid_integral_windup =  90;//70;//ok con etas ktes...
-	}
-	else if (error > 7)//15)
-	{
-		if (pv > 900)
-		{
-			_pid_integral_windup =  80;//35;
-		}
-		else if (pv > 450)
-		{
-			_pid_integral_windup =  70;//45;//35;
-		}
-		else if (pv > 200)
-		{
-			_pid_integral_windup =  60;//45;//35;
-		}
-		else if (pv > 100 )
-		{
-			_pid_integral_windup =  35;//45;//35;
-		}
-		else if (pv > 50 )
-		{
-			_pid_integral_windup =  25;//45;//35;
-		}
-		else
-		{
-			_pid_integral_windup =  20;//45;//35;
-		}
-	}
-	else if (error > 3 )
-	{
-		if (pv > 900)
-		{
-			_pid_integral_windup =  56;//20;
-		}
-		else if (pv > 450)
-		{
-			_pid_integral_windup =  35;//45;//35;
-		}
-		else if (pv > 200)
-		{
-			_pid_integral_windup =  25;//45;//35;
-		}
-		else if (pv > 100 )
-		{
-			_pid_integral_windup =  10;//45;//35;
-		}
-		else if (pv > 50 )
-		{
-			_pid_integral_windup =  5;//45;//35;
-		}
-		else
-		{
-			_pid_integral_windup =  2;//45;//35;
-		}
-	}
-	else//3 2 1 0
-	{
-		if (pv > 900)
-		{
-			_pid_integral_windup =  45;//20;
-		}
-		else if (pv > 450)
-		{
-			_pid_integral_windup =  35;//45;//35;
-		}
-		else if (pv > 200)
-		{
-			_pid_integral_windup =  25;//45;//35;
-		}
-		else if (pv > 100 )
-		{
-			_pid_integral_windup =  10;//45;//35;
-		}
-		else if (pv > 50 )
-		{
-			_pid_integral_windup =  5;//45;//35;
-		}
-		else
-		{
-			_pid_integral_windup =  2;//45;//35;
-		}
-
-	}
-
-	if (PID.error_integral > _pid_integral_windup)//integral windup
-	{PID.error_integral = _pid_integral_windup;}
-	else if (PID.error_integral < 0) //-_pid_integral_windup)
-	{PID.error_integral = 0;}//-_pid_integral_windup;}//-10;
-
-	PID.error_derivative = error - PID.previous_error;
-	PID.previous_error = error;
-
+	error = pid.ctrl.sp - pv;
 	//
-	PID_output = (PID.K_proportional * error) + (PID.K_integral * PID.error_integral) + (PID.K_derivative * PID.error_derivative);
-
-
-	if (PID_output > PID_OUTPUT_MAX)
-	{PID_output = PID_OUTPUT_MAX;}
-	else if (PID_output < PID_OUTPUT_MIN)
-	{PID_output = PID_OUTPUT_MIN;}
-
+	pid.ctrl.ei += error;
+	//kei_windup =  10;
 	//
-	//return PID_output;
-	return PID_output * TB.factor_reescala_pid;
+	if (pid.ctrl.ei > pid.ctrl.kei_windup_max)
+		pid.ctrl.ei = pid.ctrl.kei_windup_max;
+	else if (pid.ctrl.ei < pid.ctrl.kei_windup_min)
+		pid.ctrl.ei = pid.ctrl.kei_windup_min;
+	//
+	pid.ctrl.ed = error - pid.ctrl.eprevio;
+	pid.ctrl.eprevio = error;
+	//
+	pid_out = (pid.ctrl.kp * error) + (pid.ctrl.ki * pid.ctrl.ei) + (pid.ctrl.kd * pid.ctrl.ed);
+	//
+	if (pid_out > PID_OUTPUT_MAX)
+		pid_out = PID_OUTPUT_MAX;
+	else if (pid_out < PID_OUTPUT_MIN)
+		pid_out = PID_OUTPUT_MIN;
+	//
+	return pid_out * pid.pwm.tb.factor_escala;
 
 	/*
 	 * Puede ser reescalado (0..10) * F
@@ -187,23 +94,6 @@ int16_t PID_control(int16_t pv)
 	 */
 }
 
-/*****************************************************
-PID_control_output call from ISR
- *****************************************************/
-#define PWM_BASETIME_COUNTER_MAX 1//xdirectamente cada 20ms
-#define PWM_PERIOD_COUNTER_MAX PID_OUTPUT_MAX //100
-
-int8_t KFRYER_ON_SEG = 6; //6s total de encedido
-int8_t KFRYER_OFF_SEG = 2; //2s total de encedido
-
-volatile struct _TimeBasePID TB =
-{
-	.idx =	0,
-	.counter0 = 0,
-	.kdiv_1s =	{1, 2, 4},
-	.kmax_ms =	{1000, 500, 250},
-};
-
 /*
  * Esta función va a ser temporizada desde main() y no desde ISR()
  */
@@ -211,48 +101,47 @@ void PWMSoft_control(void)
 {
 	if (mainflag.sysTickMs)
 	{
-		if (++TB.counter0 >= TB.kmax_ms[TB.idx])
+		if (++pid.pwm.tb.counter0 >= pid.pwm.tb.kmax_ms[pid.pwm.tb.idx])
 		{
-			TB.counter0 = 0x00;
+			pid.pwm.tb.counter0 = 0x00;
 
 			/* Begin time base control */
 			
-			PWMSoft.dc.counter++;
+			pid.pwm.dc.counter++;
 
-			if (TB.sm0 >= 0)//inhibit with -1
+			if (pid.pwm.tb.sm0 >= 0)//inhibit with -1
 			{
 				/* adicional = 0*/
-				TB.toff_adicional_seg = 0;
+				pid.pwm.tb.toff_adicional_seg = 0;
 
-				if (PWMSoft.dc.TOP > 0)
+				if (pid.pwm.dc.ktop > 0)
 				{
-					if (TB.sm0 == 0)
+					if (pid.pwm.tb.sm0 == 0)
 					{
-						/* KFRYER_ON_SEG expresado en segundos*/
-						if (PWMSoft.dc.counter >= (KFRYER_ON_SEG * TB.kdiv_1s[TB.idx]) ) //afectado por DKIV_1S
+						if (pid.pwm.dc.counter >= (KFRYER_ON_SEG * pid.pwm.tb.kdiv_1s[pid.pwm.tb.idx]) ) //afectado por DKIV_1S
 						{
-							PWMSoft.dc.counter = 0;
-							TB.sm0++;
+							pid.pwm.dc.counter = 0;
+							pid.pwm.tb.sm0++;
 						}
 					}
-					else if (TB.sm0 == 1)
+					else if (pid.pwm.tb.sm0 == 1)
 					{
 						/* PWMSoft.dc.TOP es afectado por el factor de escala en la multiplicacion */
-						if (PWMSoft.dc.counter >= (PWMSoft.dc.TOP * TB.kdiv_1s[TB.idx]) )
+						if (pid.pwm.dc.counter >= (pid.pwm.dc.ktop * pid.pwm.tb.kdiv_1s[pid.pwm.tb.idx]) )
 						{
-							if (PWMSoft.dc.TOP < PWMSoft.period)
+							if (pid.pwm.dc.ktop < (PID_OUTPUT_MAX*pid.pwm.tb.factor_escala))
 							{
 								//PinTo0();
 							}
 
 							/* este es un caso especial*/
 							/* aqui entonces el TOP seria mejor que expusiera el factor de escala */
-							if ( ( (PID_OUTPUT_MAX * TB.factor_reescala_pid) - PWMSoft.dc.TOP  ) <= KFRYER_OFF_SEG )
+							if ( ( (PID_OUTPUT_MAX * pid.pwm.tb.factor_escala) - pid.pwm.dc.ktop  ) <= KFRYER_OFF_SEG )
 							{
 								/* adicionar un tiempo adicional*/
-								TB.toff_adicional_seg = KFRYER_OFF_SEG + 1;
+								pid.pwm.tb.toff_adicional_seg = KFRYER_OFF_SEG + 1;
 
-								TB.sm0 = -1;
+								pid.pwm.tb.sm0 = -1;
 							}
 							
 						}
@@ -261,14 +150,14 @@ void PWMSoft_control(void)
 			}
 
 			/* period */
-			if (PWMSoft.dc.counter >= (KFRYER_ON_SEG + (PID_OUTPUT_MAX*TB.factor_reescala_pid) + TB.toff_adicional_seg )) //Fin de periodo
+			if (pid.pwm.dc.counter >= (KFRYER_ON_SEG + (PID_OUTPUT_MAX*pid.pwm.tb.factor_escala) + pid.pwm.tb.toff_adicional_seg )) //Fin de periodo
 			{
-				PWMSoft.dc.counter = 0;
+				pid.pwm.dc.counter = 0;
 				//
-				TB.sm0 = 0;
-				PWMSoft.dc.TOP = PWMSoft.dc.TOP_buff;
+				pid.pwm.tb.sm0 = 0;
+				pid.pwm.dc.ktop = pid.pwm.dc.ktop_buff;	/* update, transfer*/
 				//
-				if (PWMSoft.dc.TOP > 0)
+				if (pid.pwm.dc.ktop > 0)
 				{
 					//PinTo1();
 				}
