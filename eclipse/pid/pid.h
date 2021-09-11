@@ -13,9 +13,9 @@ struct PIDtiming
 
 struct DutyCycle
 {
-	uint8_t counter;
-	uint8_t ktop;
-	uint8_t ktop_uploaded; /* for next period*/
+	uint8_t counter_ms;
+	uint8_t ktop_ms;
+	uint8_t ktop_uploaded_ms; /* for next period*/
 };
 
 struct Algorithm
@@ -32,10 +32,10 @@ struct Algorithm
 	int8_t kei_windup_max;	/* max windup for error integral */
 	int8_t kei_windup_min;	/* min windup for error integral */
 	//
-	int8_t pid_out_max;
-	int8_t pid_out_min;
+	int8_t pid_out_max_ms;
+	int8_t pid_out_min_ms;
 	//
-	int8_t pid_out_scaler;
+	int8_t scaler_time_ms;
 };
 
 struct PID
