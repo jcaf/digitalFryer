@@ -248,11 +248,4 @@ extern struct _t time_k[BASKET_MAXSIZE];
 #define KB_LYOUT_RIGHT_STARTSTOP 8	//5
 
 
-/*
- *
- */
-int8_t KFRYER_ON_SEG = 6; //6s total de encedido
-int8_t KFRYER_OFF_SEG = 2; //2s total de encedido
-
-
 #endif /* MAIN_H_ */

@@ -73,7 +73,7 @@ Functions that are there, but shouldn't be called directly, or have obscure uses
 #include "psmode_program.h"
 #include "psmode_operative.h"
 #include "indicator/indicator.h"
-#include "PID/PID.h"
+#include "pid/pid.h"
 
 volatile struct _isr_flag
 {
@@ -140,12 +140,13 @@ int main(void)
 	//
 	PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
 	ConfigOutputPin(CONFIGIOxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-
+	/*
 	PinTo0(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
 	ConfigOutputPin(CONFIGIOxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
 
 	PinTo0(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 	ConfigOutputPin(CONFIGIOxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
+	*/
 	//
 	ConfigOutputPin(CONFIGIOxBUZZER, PINxBUZZER);
 	indicator_setPortPin(&PORTWxBUZZER, PINxBUZZER);
@@ -274,7 +275,7 @@ int main(void)
 		}
 
 		/* PID control */
-		PWMSoft_control();
+		pid_job();
 
 		/* ---------- */
 		mainflag.sysTickMs = 0;
