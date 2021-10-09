@@ -140,13 +140,13 @@ int main(void)
 	//
 	PinTo0(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
 	ConfigOutputPin(CONFIGIOxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-	/*
+
 	PinTo0(PORTWxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
 	ConfigOutputPin(CONFIGIOxSOL_GAS_QUEMADOR, PINxKB_SOL_GAS_QUEMADOR);
 
 	PinTo0(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 	ConfigOutputPin(CONFIGIOxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
-	*/
+
 	//
 	ConfigOutputPin(CONFIGIOxBUZZER, PINxBUZZER);
 	indicator_setPortPin(&PORTWxBUZZER, PINxBUZZER);
@@ -184,14 +184,20 @@ int main(void)
 	TIMSK |= (1 << OCIE0);
 	sei();
 
-	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
-	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
+//	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
+//	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 
 	//x default en EEPROM
 	Tcoccion.TC = 300;	//F
 	Tcoccion.max = 390;	//390F-> 200C
 	Tcoccion.min = 50;	//200F-> 100C
 						//50F -> 10C
+
+
+	pid_set();
+	//while (1);
+	x();//tener de inmediato el valor de ktop?ms
+
 	while (1)
 	{
 		if (isr_flag.sysTickMs)

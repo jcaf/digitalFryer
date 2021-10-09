@@ -7,8 +7,8 @@ struct PIDtiming
 	int8_t sm0;
 	uint16_t counter_ticks_ms;
 	uint16_t kmax_ticks_ms;
-	int8_t kton_ms;
-	int8_t ktoff_ms;
+	int8_t k_systemdelay_ton_ms;
+	int8_t k_systemdelay_toff_ms;
 };
 
 struct DutyCycle
@@ -56,5 +56,6 @@ struct PID
 };
 
 void pid_job(void);
-
+void pid_set(void);
+void x(void);
 #endif // PID_H_
