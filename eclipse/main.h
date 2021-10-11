@@ -202,12 +202,13 @@ extern struct _t time_k[BASKET_MAXSIZE];
  */
 
 
-
+/* oficialmente PC2 es la salida del PID */
 #define PORTWxSOL_GAS_QUEMADOR 		PORTC
 #define PORTRxSOL_GAS_QUEMADOR 		PINC
 #define CONFIGIOxSOL_GAS_QUEMADOR 	DDRC
 #define PINxKB_SOL_GAS_QUEMADOR		2
 
+/* PD6, en el caso del sistema con modulo de ignicion*/
 #define PORTWxSOL_GAS_PILOTO 	PORTD
 #define PORTRxSOL_GAS_PILOTO 	PIND
 #define CONFIGIOxSOL_GAS_PILOTO 	DDRD

@@ -91,6 +91,60 @@ const struct _job job_reset;
 //k-load from EEPROM
 struct _t time_k[BASKET_MAXSIZE] = { {0, 5}, {0,10} };    //mm:ss
 
+/* Declare PID objects*/
+struct PID pid;
+
+/* Setear constantes para el primer objeto PID*/
+/* cada PWM_ACCESS_TIME_MS se lleva el timing del periodo del PWM */
+#define PWM_ACCESS_TIME_MS 100 //ms
+
+void mypid0_set(void)
+{
+	pid.pwm.timing.kmax_ticks_ms = PWM_ACCESS_TIME_MS/SYSTICK_MS;//100 ms
+
+	/* tengo que convertir a unidades de tiempo */
+	pid.algo.scaler_time_ms = 1000.0f/PWM_ACCESS_TIME_MS;	// 1seg/PWM_ACCESS_TIME_MS
+
+	/* aqui es donde realmente se fija el valor */
+	/* todo depende practicamente del valor asignado asignado a KP*/
+	pid.algo.pid_out_max_ms = 10 * pid.algo.scaler_time_ms; //10s
+	pid.algo.pid_out_min_ms = 0 * pid.algo.scaler_time_ms;	//0s
+
+	pid.pwm.timing.k_systemdelay_ton_ms = 500.0f / PWM_ACCESS_TIME_MS;
+	pid.pwm.timing.k_systemdelay_toff_ms = 5000.0f/ PWM_ACCESS_TIME_MS;
+
+	/* PID ktes x algorithm */
+	pid.algo.kp = 1.0f/5;
+	pid.algo.ki = 1.0f/10;
+	pid.algo.kd = 0;
+	pid.algo.kei_windup_min = 0;
+	pid.algo.kei_windup_max = 10;
+
+	pid.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
+	pid.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
+	//
+	pid.algo.sp = 120;
+}
+
+/* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
+int16_t mypid0_adjust_kei_windup(void)
+{
+	/* 1. error es target-specific */
+	//int16_t pv = TCtemperature;
+	int16_t pv = 115;
+	int16_t error =  pid.algo.sp - pv;
+
+	/* adjust windup for integral error */
+	if (error > 5)
+	{
+		pid.algo.kei_windup_max = 10;
+	}
+	else
+	{
+		pid.algo.kei_windup_max = 1;
+	}
+	return error;
+}
 
 int main(void)
 {
@@ -192,11 +246,13 @@ int main(void)
 	Tcoccion.max = 390;	//390F-> 200C
 	Tcoccion.min = 50;	//200F-> 100C
 						//50F -> 10C
-
-
-	pid_set();
-	//while (1);
-	x();//tener de inmediato el valor de ktop?ms
+	//
+	mypid0_set();	/* Once*/
+	//
+	/* aqui necesito tener la temperatura estable... cambiar la fx */
+	int16_t error = mypid0_adjust_kei_windup(); /* dejar preparado para job()*/
+	pid_set_ktop_ms(&pid, error);
+	pid_pwm_set_pin(&pid);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
 
 	while (1)
 	{
@@ -281,7 +337,8 @@ int main(void)
 		}
 
 		/* PID control */
-		pid_job();
+		int16_t error = mypid0_adjust_kei_windup();
+		pid_job(&pid, error);
 
 		/* ---------- */
 		mainflag.sysTickMs = 0;

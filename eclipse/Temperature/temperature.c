@@ -184,7 +184,8 @@ int8_t MAX6675_smoothAlg_nonblock_job(int16_t *TCtemperature)
 }
 
 /*****************************************************
-
+tendria que cambiar la temperature_job para saber cuando tiene correctamente la temperatura
+para poder leer al inicio del programa, ojo xq se necesita el flag de systick
 *****************************************************/
 int TCtemperature;
 void temperature_job(void)

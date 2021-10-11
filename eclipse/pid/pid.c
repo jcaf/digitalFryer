@@ -16,113 +16,116 @@ pid->pwm.timing.kmax_ticks_ms = 10/SYSTICKS;//100 ms
 int16_t pid_get_output(struct PID* pid, int16_t error);
 void pid_pwm_control(struct PID* pid);
 
-struct PID pid;
+//
+//void x(void)
+//{
+//	/* 1. error es target-specific */
+//	int8_t pv = 75;
+//	int8_t error =  pid.algo.sp - pv;
+//
+//	/* adjust windup for integral error */
+//	if (error > 50)
+//	{
+//		pid.algo.kei_windup_max = 50;
+//	}
+//	else
+//	{
+//		pid.algo.kei_windup_max = 10;
+//	}
+//
+//	/* 2. get and convert to time the output of pid_algorithm (adimensional) */
+//	pid.pwm.dc.ktop_ms = pid_get_output(&pid, error) * pid.algo.scaler_time_ms;
+//	//
+//	if (pid.pwm.dc.ktop_ms > pid.algo.pid_out_max_ms)
+//		{pid.pwm.dc.ktop_ms = pid.algo.pid_out_max_ms;}
+//	else if (pid.pwm.dc.ktop_ms < pid.algo.pid_out_min_ms)
+//		{pid.pwm.dc.ktop_ms = pid.algo.pid_out_min_ms;}
+//
+//	//set PWM por primera vez
+//	pid.pwm.dc.ktop_uploaded_ms = pid.pwm.dc.ktop_ms;
+//	if (pid.pwm.dc.ktop_uploaded_ms > 0)
+//	{
+//		PinTo1(*pid.pwm.io.port, pid.pwm.io.pin);
+//	}
+//	//
+//}
 
-/* cada PWM_ACCESS_TIME_MS se lleva el timing del periodo del PWM */
-#define PWM_ACCESS_TIME_MS 100 //ms
-
-/******************************************
- *
- ******************************************/
-void pid_set(void)
+//void pid_job(void)
+//{
+//	/* 1. error es target-specific */
+//	int8_t pv = 75;
+//	int8_t error =  pid.algo.sp - pv;
+//
+//	/* adjust windup for integral error */
+//	if (error > 50)
+//	{
+//		pid.algo.kei_windup_max = 50;
+//	}
+//	else
+//	{
+//		pid.algo.kei_windup_max = 10;
+//	}
+//
+//	/* 2. get and convert to time the output of pid_algorithm (adimensional) */
+//	/* Obtain ktop_ms*/
+//	pid.pwm.dc.ktop_ms = pid_get_output(&pid, error) * pid.algo.scaler_time_ms;
+//	//
+//	if (pid.pwm.dc.ktop_ms > pid.algo.pid_out_max_ms)
+//		{pid.pwm.dc.ktop_ms = pid.algo.pid_out_max_ms;}
+//	else if (pid.pwm.dc.ktop_ms < pid.algo.pid_out_min_ms)
+//		{pid.pwm.dc.ktop_ms = pid.algo.pid_out_min_ms;}
+//	//
+//	/* 3. */
+//	if (mainflag.sysTickMs)
+//	{
+//		/* se accede PWM_ACCESS_TIME_MS/SYSTICK_MS */
+//		if (++pid.pwm.timing.counter_ticks_ms >= pid.pwm.timing.kmax_ticks_ms)
+//		{
+//			pid.pwm.timing.counter_ticks_ms = 0x00;
+//
+//			/* aqui tengo cada 100 ms*/
+//			pid_pwm_control(&pid);
+//		}
+//	}
+//}
+void pid_pwm_set_pin(struct PID *pid)
 {
-	pid.pwm.timing.kmax_ticks_ms = PWM_ACCESS_TIME_MS/SYSTICK_MS;//100 ms
-
-	/* tengo que convertir a unidades de tiempo */
-	pid.algo.scaler_time_ms = 1000.0f/PWM_ACCESS_TIME_MS;	// 1seg/PWM_ACCESS_TIME_MS
-
-	/* aqui es donde realmente se fija el valor */
-	/* todo depende practicamente del valor asignado asignado a KP*/
-	pid.algo.pid_out_max_ms = 10 * pid.algo.scaler_time_ms; //10s
-	pid.algo.pid_out_min_ms = 0 * pid.algo.scaler_time_ms;	//0s
-
-	pid.pwm.timing.k_systemdelay_ton_ms = 2000.0f / PWM_ACCESS_TIME_MS;
-	pid.pwm.timing.k_systemdelay_toff_ms = 4000.0f/ PWM_ACCESS_TIME_MS;
-
-//	pid.pwm.io.port = &PORTWxCHISPERO_ONOFF;
-//	pid.pwm.io.pin = PINxCHISPERO_ONOFF;
-
-	/* PID ktes x algorithm */
-	pid.algo.kp = 1.0f/5;
-	pid.algo.ki = 1.0f/10;
-	pid.algo.kd = 0;
-	pid.algo.kei_windup_min = 0;
-	pid.algo.kei_windup_max = 10;
-
-	pid.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
-	pid.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
-	//
-	pid.algo.sp = 100;
-}
-/*****************************************
- *
- *****************************************/
-void x(void)
-{
-	/* 1. error es target-specific */
-		int8_t pv = 75;
-		int8_t error =  pid.algo.sp - pv;
-
-		/* adjust windup for integral error */
-		if (error > 50)
-		{
-			pid.algo.kei_windup_max = 50;
-		}
-		else
-		{
-			pid.algo.kei_windup_max = 10;
-		}
-
-		/* 2. get and convert to time the output of pid_algorithm (adimensional) */
-		pid.pwm.dc.ktop_ms = pid_get_output(&pid, error) * pid.algo.scaler_time_ms;
-		//
-		if (pid.pwm.dc.ktop_ms > pid.algo.pid_out_max_ms)
-			{pid.pwm.dc.ktop_ms = pid.algo.pid_out_max_ms;}
-		else if (pid.pwm.dc.ktop_ms < pid.algo.pid_out_min_ms)
-			{pid.pwm.dc.ktop_ms = pid.algo.pid_out_min_ms;}
-
-		//
-		pid.pwm.dc.ktop_uploaded_ms = pid.pwm.dc.ktop_ms;
-		if (pid.pwm.dc.ktop_uploaded_ms > 0)
-		{
-			PinTo1(*pid.pwm.io.port, pid.pwm.io.pin);
-		}
-		//
-}
-void pid_job(void)
-{
-	/* 1. error es target-specific */
-	int8_t pv = 75;
-	int8_t error =  pid.algo.sp - pv;
-
-	/* adjust windup for integral error */
-	if (error > 50)
+	pid->pwm.dc.ktop_uploaded_ms = pid->pwm.dc.ktop_ms;
+	if (pid->pwm.dc.ktop_uploaded_ms > 0)
 	{
-		pid.algo.kei_windup_max = 50;
+		PinTo1(*pid->pwm.io.port, pid->pwm.io.pin);
 	}
-	else 
+	else
 	{
-		pid.algo.kei_windup_max = 10;
+		PinTo0(*pid->pwm.io.port, pid->pwm.io.pin);
 	}
+}
 
+void pid_set_ktop_ms(struct PID *pid, int16_t error)
+{
 	/* 2. get and convert to time the output of pid_algorithm (adimensional) */
-	pid.pwm.dc.ktop_ms = pid_get_output(&pid, error) * pid.algo.scaler_time_ms;
+	/* Obtain ktop_ms*/
+	pid->pwm.dc.ktop_ms = pid_get_output(pid, error) * pid->algo.scaler_time_ms;
 	//
-	if (pid.pwm.dc.ktop_ms > pid.algo.pid_out_max_ms)
-		{pid.pwm.dc.ktop_ms = pid.algo.pid_out_max_ms;}
-	else if (pid.pwm.dc.ktop_ms < pid.algo.pid_out_min_ms)
-		{pid.pwm.dc.ktop_ms = pid.algo.pid_out_min_ms;}
+	if (pid->pwm.dc.ktop_ms > pid->algo.pid_out_max_ms)
+		{pid->pwm.dc.ktop_ms = pid->algo.pid_out_max_ms;}
+	else if (pid->pwm.dc.ktop_ms < pid->algo.pid_out_min_ms)
+		{pid->pwm.dc.ktop_ms = pid->algo.pid_out_min_ms;}
+}
+void pid_job(struct PID *pid, int16_t error)
+{
+	pid_set_ktop_ms(pid, error);
 	//
 	/* 3. */
 	if (mainflag.sysTickMs)
 	{
 		/* se accede PWM_ACCESS_TIME_MS/SYSTICK_MS */
-		if (++pid.pwm.timing.counter_ticks_ms >= pid.pwm.timing.kmax_ticks_ms)
+		if (++pid->pwm.timing.counter_ticks_ms >= pid->pwm.timing.kmax_ticks_ms)
 		{
-			pid.pwm.timing.counter_ticks_ms = 0x00;
+			pid->pwm.timing.counter_ticks_ms = 0x00;
 
 			/* aqui tengo cada 100 ms*/
-			pid_pwm_control(&pid);
+			pid_pwm_control(pid);
 		}
 	}
 }
@@ -187,11 +190,12 @@ void pid_pwm_control(struct PID* pid)
 		//
 		pid->pwm.timing.sm0 = 0;
 		//
-		pid->pwm.dc.ktop_uploaded_ms = pid->pwm.dc.ktop_ms;	/* update, transfer*/
-		if (pid->pwm.dc.ktop_uploaded_ms > 0)
-		{
-			PinTo1(*pid->pwm.io.port, pid->pwm.io.pin);
-		}
+		pid_pwm_set_pin(pid);
+//		pid->pwm.dc.ktop_uploaded_ms = pid->pwm.dc.ktop_ms;	/* update, transfer*/
+//		if (pid->pwm.dc.ktop_uploaded_ms > 0)
+//		{
+//			PinTo1(*pid->pwm.io.port, pid->pwm.io.pin);
+//		}
 		//
 	}
 }
