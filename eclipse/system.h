@@ -1,6 +1,10 @@
 #ifndef SYSTEM_H_
 #define SYSTEM_H
 
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
 //define now is in local:"main.h"
 #define F_CPU 16000000UL	//16000000UL		//AVR-GCC
 #define _XTAL_FREQ F_CPU	//C PIC
@@ -25,6 +29,8 @@
 
 #if defined(__XC) || defined(HI_TECH_C) || defined(_MPC_)
 
+	#include <xc.h>
+
 	#define INPUT_PORT8BIT  0xFF
 	#define OUTPUT_PORT8BIT  0x00
 
@@ -42,9 +48,14 @@
 
 	//Timer CPU INSTRUCCTION CYCLE = N Q_CYCLES
 	#define Q_CYCLE 4   //PIC ARCH.
-	#include <xc.h>
 
 #elif defined(__GNUC__) && defined(__AVR__)
+
+	#include <avr/io.h>
+	#include <avr/interrupt.h>
+	#include <avr/pgmspace.h>
+	#include <avr/eeprom.h>
+    #include <util/delay.h>
 
     #define INPUT_PORT8BIT  0x00
 	#define OUTPUT_PORT8BIT  0xFF
@@ -65,11 +76,7 @@
 	//Timer CPU INSTRUCCTION CYCLE = N Q_CYCLES
 	#define Q_CYCLE 1   //AVR ARCH.
 	//
-	#include <avr/io.h>
-	#include <avr/interrupt.h>
-    	#include <avr/pgmspace.h>
-	#include <avr/eeprom.h>
-    	#include <util/delay.h>
+
 	#define __delay_ms(x) _delay_ms(x)
 	#define __delay_us(x) _delay_us(x)
 
@@ -98,9 +105,7 @@
 #endif
 
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+
 
 #define TMR8B_OVF(T_DESIRED, PREESCALER) (uint16_t) ((1UL<<8) - (T_DESIRED*F_CPU/(PREESCALER*Q_CYCLE)) )
 #define TMR16B_OVF(T_DESIRED, PREESCALER) (uint16_t)((1UL<<16) - ( T_DESIRED *F_CPU / (PREESCALER*Q_CYCLE)) )

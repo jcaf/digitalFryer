@@ -65,7 +65,6 @@ Pointers: nothing fancy here: GtkWidget *foo, TrackingOrder *bar.
 Global variables: just don't use global variables. They are evil.
 Functions that are there, but shouldn't be called directly, or have obscure uses, or whatever: one or more underscores at the beginning: _refrobnicate_data_tables(), _destroy_cache().
  */
-
 #include "main.h"
 #include "pinGetLevel/pinGetLevel.h"
 #include "igDeteccFlama.h"
@@ -92,7 +91,7 @@ const struct _job job_reset;
 struct _t time_k[BASKET_MAXSIZE] = { {0, 5}, {0,10} };    //mm:ss
 
 /* Declare PID objects*/
-struct PID pid;
+struct PID mypid0;
 
 /* Setear constantes para el primer objeto PID*/
 /* cada PWM_ACCESS_TIME_MS se lleva el timing del periodo del PWM */
@@ -100,48 +99,59 @@ struct PID pid;
 
 void mypid0_set(void)
 {
-	pid.pwm.timing.kmax_ticks_ms = PWM_ACCESS_TIME_MS/SYSTICK_MS;//100 ms
+	mypid0.pwm.timing.kmax_ticks_ms = PWM_ACCESS_TIME_MS/SYSTICK_MS;//100 ms
 
 	/* tengo que convertir a unidades de tiempo */
-	pid.algo.scaler_time_ms = 1000.0f/PWM_ACCESS_TIME_MS;	// 1seg/PWM_ACCESS_TIME_MS
+	mypid0.algo.scaler_time_ms = 1000.0f/PWM_ACCESS_TIME_MS;	// 1seg/PWM_ACCESS_TIME_MS
+
 
 	/* aqui es donde realmente se fija el valor */
 	/* todo depende practicamente del valor asignado asignado a KP*/
-	pid.algo.pid_out_max_ms = 10 * pid.algo.scaler_time_ms; //10s
-	pid.algo.pid_out_min_ms = 0 * pid.algo.scaler_time_ms;	//0s
+	mypid0.algo.pid_out_max_ms = 10 * mypid0.algo.scaler_time_ms; //10s
+	mypid0.algo.pid_out_min_ms = 0 * mypid0.algo.scaler_time_ms;	//0s
 
-	pid.pwm.timing.k_systemdelay_ton_ms = 500.0f / PWM_ACCESS_TIME_MS;
-	pid.pwm.timing.k_systemdelay_toff_ms = 5000.0f/ PWM_ACCESS_TIME_MS;
+	/* El sistema presenta esos delays */
+	mypid0.pwm.timing.k_systemdelay_ton_ms = 500.0f / PWM_ACCESS_TIME_MS;
+	mypid0.pwm.timing.k_systemdelay_toff_ms = 5000.0f/ PWM_ACCESS_TIME_MS;
 
 	/* PID ktes x algorithm */
-	pid.algo.kp = 1.0f/5;
-	pid.algo.ki = 1.0f/10;
-	pid.algo.kd = 0;
-	pid.algo.kei_windup_min = 0;
-	pid.algo.kei_windup_max = 10;
 
-	pid.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
-	pid.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
+	/* 10 es la salida deseada del controlador PID que representa
+	 * el valor maximo (mayor o igual a este siempre será acotado a 10)
+	 *
+	 * +50 es el la error SP-PV, a partir de esa diferencia queremos el controlador
+	 * empieza a regular entre 10..0 de manera proporcional
+	 *  */
+	mypid0.algo.kp = 10.0f / 50;
+	//pid.algo.kp = 1.0f/5;
+
+	mypid0.algo.ki = 1.0f/10;
+	mypid0.algo.kd = 0;
+	mypid0.algo.kei_windup_min = 0;
+	mypid0.algo.kei_windup_max = 10;
+
+	mypid0.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
+	mypid0.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
 	//
-	pid.algo.sp = 120;
+	mypid0.algo.sp = 200;
 }
 
 /* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
 int16_t mypid0_adjust_kei_windup(void)
 {
 	/* 1. error es target-specific */
-	//int16_t pv = TCtemperature;
-	int16_t pv = 115;
-	int16_t error =  pid.algo.sp - pv;
+	int16_t pv = TCtemperature;
+	//int16_t pv = 110;
+	int16_t error =  mypid0.algo.sp - pv;
 
 	/* adjust windup for integral error */
 	if (error > 5)
 	{
-		pid.algo.kei_windup_max = 10;
+		mypid0.algo.kei_windup_max = 10;
 	}
 	else
 	{
-		pid.algo.kei_windup_max = 1;
+		mypid0.algo.kei_windup_max = 1;
 	}
 	return error;
 }
@@ -251,8 +261,8 @@ int main(void)
 	//
 	/* aqui necesito tener la temperatura estable... cambiar la fx */
 	int16_t error = mypid0_adjust_kei_windup(); /* dejar preparado para job()*/
-	pid_set_ktop_ms(&pid, error);
-	pid_pwm_set_pin(&pid);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
+	pid_set_ktop_ms(&mypid0, error);
+	pid_pwm_set_pin(&mypid0);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
 
 	while (1)
 	{
@@ -338,7 +348,7 @@ int main(void)
 
 		/* PID control */
 		int16_t error = mypid0_adjust_kei_windup();
-		pid_job(&pid, error);
+		pid_job(&mypid0, error);
 
 		/* ---------- */
 		mainflag.sysTickMs = 0;
