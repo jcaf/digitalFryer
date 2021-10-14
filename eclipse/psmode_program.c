@@ -133,10 +133,10 @@ void psmode_program(void)
 		}
 		else if (fryer.ps_program.sm0 == 4)//EXIT
 		{
-			fryer.psmode = PSMODE_OPERATIVE;
 			fryer.ps_program = ps_reset;
+
+			fryer.psmode = PSMODE_OPERATIVE;
 			fryer.ps_operative = ps_reset;
-			//
 			psmode_operative_init();
 
 			blinkIsActive = 0;

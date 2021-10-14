@@ -133,7 +133,7 @@ void mypid0_set(void)
 	mypid0.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
 	mypid0.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
 	//
-	mypid0.algo.sp = 200;
+	mypid0.algo.sp = 300;
 }
 
 /* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
@@ -283,14 +283,18 @@ int main(void)
 				//---------------------------
 				if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_SWONOFF))
 				{
-					lcdan_set_cursor(0, 0);
-					//change the flow
+					indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+					indicator_On();
+					//
+					lcdan_clear();
+
 					if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)	//active in low
 					{
 						sm0 = 0x00;
 					}
 					else
 					{
+						lcdan_set_cursor(6, 0);
 						lcdan_print_PSTRstring(PSTR("OFF"));
 					}
 					pinGetLevel_clearChange(PGLEVEL_LYOUT_SWONOFF);
@@ -300,12 +304,15 @@ int main(void)
 			}
 		}
 		temperature_job();
-		indicator_job();
+		indicator_job();//actua sobre el buzzer
 		//
 		if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)
 		{
 			if (sm0 == 0)
 			{
+				lcdan_set_cursor(0, 0);
+				lcdan_print_PSTRstring(PSTR("PRECALENTAMIENTO"));
+				//
 				igDeteccFlama_resetJob();
 				sm0++;
 			}
@@ -321,8 +328,13 @@ int main(void)
 			{
 				//Precalentamiento
 
-				if (1)//(temper_measured >= Temper_Precalentamiento)
+				//if (1)//(temper_measured >= Temper_Precalentamiento)
+				if (TCtemperature >= mypid0.algo.sp)
 				{
+					//
+					indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+					indicator_On();
+					//
 					//buzzer beep + LCD + PID_Control -> setpoint = T
 					sm0++;
 					psmode_operative_init();
@@ -330,6 +342,7 @@ int main(void)
 			}
 			else if (sm0 == 3)
 			{
+
 			}
 			//---------------------------------------------------
 			if (fryer.psmode == PSMODE_PROGRAM)
