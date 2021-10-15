@@ -28,6 +28,19 @@ int8_t psmode_program(void)
 	//fryer.ps_program.sm0 avanza por la tecla e internamente
 	if (fryer.ps_program.sm0 == 0)
 	{
+		struct _key_prop key_prop = { 0 };
+		key_prop = propEmpty;
+		key_prop.uFlag.f.onKeyPressed = 1;
+		for (int i=0; i<BASKET_MAXSIZE; i++)
+		{
+			ikb_setKeyProp(fryer.basket[i].kb.program ,key_prop);//
+		}
+		lcdan_clear();
+
+		fryer.ps_program.sm0++;
+	}
+	else if (fryer.ps_program.sm0 == 1)
+	{
 		lcdan_set_cursor(DISP_CURSOR_BASKETLEFT_START_X, 0);
 		lcdan_print_string("OIL  ");
 		//
@@ -44,19 +57,19 @@ int8_t psmode_program(void)
 		}
 		fryer.ps_program.sm0++;
 	}
-	else if (fryer.ps_program.sm0 == 1)
+	else if (fryer.ps_program.sm0 == 2)
 	{
 		MAX6675_formatText3dig(TCtemperature, str);
 		lcdan_set_cursor(DISP_CURSOR_BASKETRIGHT_START_X, 0);
 		lcdan_print_string(str);
 	}
-	else if (fryer.ps_program.sm0 == 2)
+	else if (fryer.ps_program.sm0 == 3)
 	{
 		lcdan_set_cursor(DISP_CURSOR_BASKETLEFT_START_X, 0);
 		lcdan_print_string("SET  ");
 		fryer.ps_program.sm0++;
 	}
-	else if (fryer.ps_program.sm0 == 3)
+	else if (fryer.ps_program.sm0 == 4)
 	{
 		for (int i=0; i<BASKET_MAXSIZE; i++)
 		{
@@ -127,13 +140,13 @@ int8_t psmode_program(void)
 
 		fryer.ps_program.sm0++;
 		//
-		if (fryer.ps_program.sm0 == 2)
+		if (fryer.ps_program.sm0 == 3)
 		{
 			blink.timerBlink_K = PSMODE_PROGRAM_BLINK_TIMER_KMAX;
 			blink_set(&blink);
 			blinkIsActive = 1;
 		}
-		else if (fryer.ps_program.sm0 == 4)//EXIT
+		else if (fryer.ps_program.sm0 == 5)//EXIT
 		{
 			codret = 1;
 			fryer.ps_program = ps_reset;

@@ -133,7 +133,7 @@ void mypid0_set(void)
 	mypid0.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
 	mypid0.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
 	//
-	mypid0.algo.sp = 300;
+	mypid0.algo.sp = 10;//300;
 }
 
 /* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
@@ -268,7 +268,7 @@ int main(void)
 	for (int i=0; i<BASKET_MAXSIZE; i++)
 	{
 		kbmode_setDefault1(&fryer.basket[i].kb);
-		fryer.basket[i].kbmode = KBMODE_DEFAULT;
+		//fryer.basket[i].kbmode = KBMODE_DEFAULT;
 	}
 	//
 	while (1)
@@ -342,28 +342,17 @@ int main(void)
 					indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
 					indicator_On();
 					//
-					//buzzer beep + LCD + PID_Control -> setpoint = T
-					sm0++;
-					//psmode_operative_init();
-					//
 					fryer.bf.operative_mode = 1;
+
+					sm0++;
 				}
 			}
 			else if (sm0 == 3)
 			{
 
 			}
-			//---------------------------------------------------
-//			if (fryer.psmode == PSMODE_PROGRAM)
-//			{
-//				psmode_program();
-//			}
-//			else if (fryer.psmode == PSMODE_OPERATIVE)
-//			{
-//				psmode_operative();
-//			}
 
-			if (fryer.bf.program_mode == 0)
+			if (fryer.bf.program_mode == 0)//se autoexcluye
 			{
 				if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 				{
@@ -371,30 +360,22 @@ int main(void)
 
 					if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
 					{
-						//fryer.psmode = PSMODE_PROGRAM;
 						fryer.bf.program_mode = 1;
 						//
 						fryer.ps_operative = ps_reset;
 						fryer.ps_program = ps_reset;
-						//
-						struct _key_prop key_prop = { 0 };
-						key_prop = propEmpty;
-						key_prop.uFlag.f.onKeyPressed = 1;
+						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+						indicator_On();
 
 						//Salir actualizando eeprom
 						for (int i=0; i<BASKET_MAXSIZE; i++)
 						{
 							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
-
-							ikb_setKeyProp(fryer.basket[i].kb.program ,key_prop);//
 						}
-
-						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-						indicator_On();
-						//
-						lcdan_clear();
 					}
 				}
+
+				//ikb_flush();
 			}
 
 			//
@@ -404,9 +385,14 @@ int main(void)
 				{
 					fryer.bf.program_mode = 0;
 
-					if (!fryer.bf.operative_mode)
+					if (!fryer.bf.operative_mode)	//sigue en precalentamiento
 					{
-						//sigue en precalentamiento
+						//set kb
+						for (int i=0; i<BASKET_MAXSIZE; i++)
+						{
+							kbmode_setDefault1(&fryer.basket[i].kb);
+						}
+
 						lcdan_clear();
 						lcdan_set_cursor(0, 0);
 						lcdan_print_PSTRstring(PSTR("MELT"));
@@ -418,7 +404,6 @@ int main(void)
 			{
 				psmode_operative();
 			}
-
 
 		}
 		else //switch OFF
@@ -433,7 +418,6 @@ int main(void)
 		/* ---------- */
 		mainflag.sysTickMs = 0;
 	}
-
 	return 0;
 }
 

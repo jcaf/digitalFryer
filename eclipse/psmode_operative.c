@@ -385,7 +385,7 @@ void psmode_operative(void)
 			blink_timing();
 		}
 		//+++++++++++++++++++++++++++++++++++++++++++++++++
-	}//for
+	}//endfor
 	//
 	//
 	if (ikb_getKeyStartPressed(KB_LYOUT_PROGRAM))
