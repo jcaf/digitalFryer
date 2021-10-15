@@ -133,7 +133,7 @@ void mypid0_set(void)
 	mypid0.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
 	mypid0.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
 	//
-	mypid0.algo.sp = 10;//300;
+	mypid0.algo.sp = 300;
 }
 
 /* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
@@ -162,12 +162,12 @@ int main(void)
 	int c = 0;
 
 	//++--
-	//Kb init
+	/* se usara la etiqueta KB_LYOUT_PROGRAM y no el [i]kb.program, xq es comun para ambos */
 	fryer.basket[BASKET_LEFT].kb.startStop = KB_LYOUT_LEFT_STARTSTOP;
 	fryer.basket[BASKET_LEFT].kb.sleep = KB_LYOUT_LEFT_SLEEP;
 	fryer.basket[BASKET_LEFT].kb.down = KB_LYOUT_LEFT_DOWN;
 	fryer.basket[BASKET_LEFT].kb.up = KB_LYOUT_LEFT_UP;
-	fryer.basket[BASKET_LEFT].kb.mode = KB_LYOUT_PROGRAM;//comun a ambos
+	fryer.basket[BASKET_LEFT].kb.program = KB_LYOUT_PROGRAM;//comun a ambos
 
 	fryer.basket[BASKET_LEFT].display.cursor.x = DISP_CURSOR_BASKETLEFT_START_X;//0x00;
 	fryer.basket[BASKET_LEFT].display.cursor.y = 0x00;
@@ -177,7 +177,7 @@ int main(void)
 	fryer.basket[BASKET_RIGHT].kb.sleep = KB_LYOUT_RIGHT_SLEEP;
 	fryer.basket[BASKET_RIGHT].kb.down = KB_LYOUT_RIGHT_DOWN;
 	fryer.basket[BASKET_RIGHT].kb.up = KB_LYOUT_RIGHT_UP;
-	fryer.basket[BASKET_RIGHT].kb.mode = KB_LYOUT_PROGRAM;//comun a ambos
+	fryer.basket[BASKET_RIGHT].kb.program = KB_LYOUT_PROGRAM;//comun a ambos
 
 	fryer.basket[BASKET_RIGHT].display.cursor.x = DISP_CURSOR_BASKETRIGHT_START_X;//0x0B;
 	fryer.basket[BASKET_RIGHT].display.cursor.y = 0x00;
@@ -268,7 +268,7 @@ int main(void)
 	for (int i=0; i<BASKET_MAXSIZE; i++)
 	{
 		kbmode_setDefault1(&fryer.basket[i].kb);
-		fryer.basket[i].kb.mode = KBMODE_DEFAULT;
+		fryer.basket[i].kbmode = KBMODE_DEFAULT;
 	}
 	//
 	while (1)
@@ -386,7 +386,7 @@ int main(void)
 						{
 							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
 
-							ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
+							ikb_setKeyProp(fryer.basket[i].kb.program ,key_prop);//
 						}
 
 						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);

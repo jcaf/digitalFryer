@@ -37,7 +37,7 @@ void kbmode_setDefault1(struct _kb_basket *kb)
 	//
 	key_prop.uFlag.f.onKeyPressed = 0;
 	key_prop.uFlag.f.atTimeExpired2 = 1;
-	ikb_setKeyProp(kb->mode ,key_prop);//programacion
+	ikb_setKeyProp(kb->program ,key_prop);//programacion
 	//
 	key_prop.uFlag.f.atTimeExpired2 = 0;
 	//
@@ -106,7 +106,7 @@ void psmode_operative_init(void)
 
 		//
 		kbmode_setDefault1(&fryer.basket[i].kb);
-		fryer.basket[i].kb.mode = KBMODE_DEFAULT;
+		fryer.basket[i].kbmode = KBMODE_DEFAULT;
 	}
 	//--+
 }
@@ -143,7 +143,7 @@ void psmode_operative(void)
 			fryer.basket[i].display.bf.print_cookCycle = 0;
 			//fryer.basket[i].bf.user_startStop = FRYER_COOKCYCLE_USER_STOPPED;//preserva el estado actual si esta corriendo el temporizador o no
 			fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
-			fryer.basket[i].kb.mode = KBMODE_EDIT_COOKCYCLE;
+			fryer.basket[i].kbmode = KBMODE_EDIT_COOKCYCLE;
 			fryer.basket[i].display.owner = DISPLAY_EDITCOOKCYCLE;
 			fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
 			blink_reset(BLINK_TOGGLE_SET_TEXT);
@@ -163,7 +163,7 @@ void psmode_operative(void)
 			fryer.basket[i].display.bf.print_cookCycle = 0;
 			//fryer.basket[i].bf.user_startStop = FRYER_COOKCYCLE_USER_STOPPED;
 			fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
-			fryer.basket[i].kb.mode = KBMODE_EDIT_COOKCYCLE;
+			fryer.basket[i].kbmode = KBMODE_EDIT_COOKCYCLE;
 			fryer.basket[i].display.owner = DISPLAY_EDITCOOKCYCLE;
 			fryer.basket[i].cookCycle.editcycle.timerTimeout = 0x0000;//reset
 			blink_reset(BLINK_TOGGLE_SET_TEXT);
@@ -176,7 +176,7 @@ void psmode_operative(void)
 		ikb_key_was_read(fryer.basket[i].kb.up);
 
 
-		if (fryer.basket[i].kb.mode == KBMODE_DEFAULT)
+		if (fryer.basket[i].kbmode == KBMODE_DEFAULT)
 		{
 			if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
 			{
@@ -221,7 +221,7 @@ void psmode_operative(void)
 				}
 			}
 		}
-		else if (fryer.basket[i].kb.mode == KBMODE_EDIT_COOKCYCLE)
+		else if (fryer.basket[i].kbmode == KBMODE_EDIT_COOKCYCLE)
 		{
 			//cancela blinking e inicia nuevo ciclo de coccion
 			if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
@@ -306,7 +306,7 @@ void psmode_operative(void)
 			fryer.basket[i].display.bf.print_cookCycle = 1;
 			//return to kb
 			//kbmode_setDefault(&fryer.basket[i].kb);
-			fryer.basket[i].kb.mode = KBMODE_DEFAULT;
+			fryer.basket[i].kbmode = KBMODE_DEFAULT;
 		}
 
 		//

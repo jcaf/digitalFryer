@@ -80,9 +80,10 @@ struct _basket
 				int8_t sleep;
 				int8_t down;
 				int8_t up;
-				//
-				int8_t mode;
+				int8_t program;
 		} kb;
+
+		int8_t kbmode;
 
 		struct _cookCycle
 		{
