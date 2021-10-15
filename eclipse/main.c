@@ -133,7 +133,7 @@ void mypid0_set(void)
 	mypid0.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
 	mypid0.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
 	//
-	mypid0.algo.sp = 300;
+	mypid0.algo.sp = 10;//300;
 }
 
 /* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
@@ -264,6 +264,13 @@ int main(void)
 	pid_set_ktop_ms(&mypid0, error);
 	pid_pwm_set_pin(&mypid0);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
 
+	//set kb
+	for (int i=0; i<BASKET_MAXSIZE; i++)
+	{
+		kbmode_setDefault1(&fryer.basket[i].kb);
+		fryer.basket[i].kb.mode = KBMODE_DEFAULT;
+	}
+	//
 	while (1)
 	{
 		if (isr_flag.sysTickMs)
@@ -311,7 +318,7 @@ int main(void)
 			if (sm0 == 0)
 			{
 				lcdan_set_cursor(0, 0);
-				lcdan_print_PSTRstring(PSTR("PRECALENTAMIENTO"));
+				lcdan_print_PSTRstring(PSTR("MELT"));
 				//
 				igDeteccFlama_resetJob();
 				sm0++;
@@ -337,7 +344,9 @@ int main(void)
 					//
 					//buzzer beep + LCD + PID_Control -> setpoint = T
 					sm0++;
-					psmode_operative_init();
+					//psmode_operative_init();
+					//
+					fryer.bf.operative_mode = 1;
 				}
 			}
 			else if (sm0 == 3)
@@ -345,14 +354,72 @@ int main(void)
 
 			}
 			//---------------------------------------------------
-			if (fryer.psmode == PSMODE_PROGRAM)
+//			if (fryer.psmode == PSMODE_PROGRAM)
+//			{
+//				psmode_program();
+//			}
+//			else if (fryer.psmode == PSMODE_OPERATIVE)
+//			{
+//				psmode_operative();
+//			}
+
+			if (fryer.bf.program_mode == 0)
 			{
-				psmode_program();
+				if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
+				{
+					ikb_key_was_read(KB_LYOUT_PROGRAM);
+
+					if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
+					{
+						//fryer.psmode = PSMODE_PROGRAM;
+						fryer.bf.program_mode = 1;
+						//
+						fryer.ps_operative = ps_reset;
+						fryer.ps_program = ps_reset;
+						//
+						struct _key_prop key_prop = { 0 };
+						key_prop = propEmpty;
+						key_prop.uFlag.f.onKeyPressed = 1;
+
+						//Salir actualizando eeprom
+						for (int i=0; i<BASKET_MAXSIZE; i++)
+						{
+							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+
+							ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
+						}
+
+						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+						indicator_On();
+						//
+						lcdan_clear();
+					}
+				}
 			}
-			else if (fryer.psmode == PSMODE_OPERATIVE)
+
+			//
+			if (fryer.bf.program_mode == 1)
+			{
+				if (psmode_program() == 1)
+				{
+					fryer.bf.program_mode = 0;
+
+					if (!fryer.bf.operative_mode)
+					{
+						//sigue en precalentamiento
+						lcdan_clear();
+						lcdan_set_cursor(0, 0);
+						lcdan_print_PSTRstring(PSTR("MELT"));
+					}
+				}
+			}
+			//
+			if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
 			{
 				psmode_operative();
 			}
+
+
 		}
 		else //switch OFF
 		{

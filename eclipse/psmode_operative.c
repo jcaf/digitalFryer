@@ -99,6 +99,7 @@ void psmode_operative_init(void)
 		if (fryer.basket[i].display.bf.print_cookCycle == 1)
 		{
 			build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
+			lcdan_clear();
 			lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
 			lcdan_print_string(str);
 		}
@@ -120,6 +121,8 @@ void psmode_operative(void)
 
 	if (fryer.ps_operative.sm0 == 0)
 	{
+		psmode_operative_init();
+		fryer.ps_operative.sm0++;
 	}
 
 	for (int i=0; i<BASKET_MAXSIZE; i++)
@@ -393,32 +396,30 @@ void psmode_operative(void)
 		indicator_On();
 	}
 	//
-	if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
-	{
-
-		ikb_key_was_read(KB_LYOUT_PROGRAM);
-
-		if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
-		{
-			fryer.psmode = PSMODE_PROGRAM;
-			fryer.ps_program = ps_reset;
-			fryer.ps_operative = ps_reset;
-			//
-			struct _key_prop key_prop = { 0 };
-			key_prop = propEmpty;
-			key_prop.uFlag.f.onKeyPressed = 1;
-
-			//Salir actualizando eeprom
-			for (int i=0; i<BASKET_MAXSIZE; i++)
-			{
-				time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
-				//
-				ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
-			}
-			indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-			indicator_On();
-		}
-
-	}
+//	if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
+//	{
+//		ikb_key_was_read(KB_LYOUT_PROGRAM);
+//
+//		if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
+//		{
+//			fryer.psmode = PSMODE_PROGRAM;
+//			fryer.ps_program = ps_reset;
+//			fryer.ps_operative = ps_reset;
+//			//
+//			struct _key_prop key_prop = { 0 };
+//			key_prop = propEmpty;
+//			key_prop.uFlag.f.onKeyPressed = 1;
+//
+//			//Salir actualizando eeprom
+//			for (int i=0; i<BASKET_MAXSIZE; i++)
+//			{
+//				time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+//				//
+//				ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
+//			}
+//			indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+//			indicator_On();
+//		}
+//	}
 
 }

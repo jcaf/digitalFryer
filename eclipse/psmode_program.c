@@ -19,8 +19,10 @@ struct _Tcoccion Tcoccion;
 
 int blinkIsActive=0;
 
-void psmode_program(void)
+//void
+int8_t psmode_program(void)
 {
+	char codret = 0;
 	char str[10];
 
 	//fryer.ps_program.sm0 avanza por la tecla e internamente
@@ -133,11 +135,12 @@ void psmode_program(void)
 		}
 		else if (fryer.ps_program.sm0 == 4)//EXIT
 		{
+			codret = 1;
 			fryer.ps_program = ps_reset;
 
-			fryer.psmode = PSMODE_OPERATIVE;
+			//fryer.psmode = PSMODE_OPERATIVE;
 			fryer.ps_operative = ps_reset;
-			psmode_operative_init();
+			//psmode_operative_init();
 
 			blinkIsActive = 0;
 		}
@@ -152,4 +155,5 @@ void psmode_program(void)
 	}
 	//+++++++++++++++++++++++++++++++++++++++++++++++++
 
+	return codret;
 }

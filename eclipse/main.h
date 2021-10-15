@@ -137,7 +137,13 @@ struct _fryer
 {
 		struct _basket basket[BASKET_MAXSIZE];
 		//int8_t kb_mode;
-		int8_t psmode;
+		//int8_t psmode;
+		struct _fryer_bf
+		{
+			unsigned program_mode:1;
+			unsigned operative_mode:1;
+			unsigned __a:6;
+		}bf;
 
 		struct _process ps_program;
 		struct _process ps_operative;

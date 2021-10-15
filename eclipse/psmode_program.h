@@ -16,7 +16,8 @@ struct _Tcoccion
 };
 extern struct _Tcoccion Tcoccion;
 
-void psmode_program(void);
+//void
+int8_t psmode_program(void);
 extern struct _pgrmmode pgrmode;
 
 #endif /* PSMODE_PROGRAM_H_ */
