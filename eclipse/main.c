@@ -88,7 +88,7 @@ struct _job job_captureTemperature;
 const struct _job job_reset;
 
 //k-load from EEPROM
-struct _t time_k[BASKET_MAXSIZE] = { {0, 5}, {0,10} };    //mm:ss
+struct _t EEMEM COOKTIME[BASKET_MAXSIZE]= { {7, 0}, {7,0} };    //mm:ss
 
 /* Declare PID objects*/
 struct PID mypid0;
@@ -252,10 +252,11 @@ int main(void)
 //	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 
 	//x default en EEPROM
-	Tcoccion.TC = 300;	//F
-	Tcoccion.max = 390;	//390F-> 200C
-	Tcoccion.min = 50;	//200F-> 100C
-						//50F -> 10C
+//	tmprture_coccion.TC = 350;
+//	tmprture_coccion.max = 450;
+//	tmprture_coccion.min = 50;
+
+	eeprom_read_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
 	//
 	mypid0_set();	/* Once*/
 	//
@@ -370,7 +371,9 @@ int main(void)
 						//Salir actualizando eeprom
 						for (int i=0; i<BASKET_MAXSIZE; i++)
 						{
-							time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+							//COOKTIME[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+
+							eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 						}
 					}
 				}

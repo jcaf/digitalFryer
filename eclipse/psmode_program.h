@@ -14,9 +14,10 @@ struct _Tcoccion
 	int16_t min;
 	int16_t max;
 };
-extern struct _Tcoccion Tcoccion;
+extern struct _Tcoccion tmprture_coccion;
+extern struct _Tcoccion EEMEM TMPRTURE_COCCION;
 
-//void
+
 int8_t psmode_program(void);
 extern struct _pgrmmode pgrmode;
 

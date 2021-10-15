@@ -181,7 +181,7 @@ extern struct _mainflag mainflag;
 #define SYSTICK_MS 10//10ms
 
 
-extern struct _t time_k[BASKET_MAXSIZE];
+extern struct _t EEMEM COOKTIME[BASKET_MAXSIZE];
 
 
 //////////////////////////////////////////

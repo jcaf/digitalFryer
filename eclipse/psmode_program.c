@@ -15,11 +15,16 @@ static struct _blink blink;
 
 struct _pgrmmode pgrmode;
 
-struct _Tcoccion Tcoccion;
+/* Farenheiths*/
+struct _Tcoccion EEMEM TMPRTURE_COCCION = {
+		.TC = 350,
+		.max = 450,
+		.min = 50
+};
+struct _Tcoccion tmprture_coccion;
 
 int blinkIsActive=0;
 
-//void
 int8_t psmode_program(void)
 {
 	char codret = 0;
@@ -86,9 +91,9 @@ int8_t psmode_program(void)
 
 				blink_reset(BLINK_TOGGLE_SET_TEXT);
 
-				if (--Tcoccion.TC <= Tcoccion.min)
+				if (--tmprture_coccion.TC <= tmprture_coccion.min)
 				{
-					Tcoccion.TC = Tcoccion.min;
+					tmprture_coccion.TC = tmprture_coccion.min;
 				}
 			}
 			if (ikb_key_is_ready2read(fryer.basket[i].kb.up))
@@ -104,9 +109,9 @@ int8_t psmode_program(void)
 
 				blink_reset(BLINK_TOGGLE_SET_TEXT);
 
-				if (++Tcoccion.TC >= Tcoccion.max)
+				if (++tmprture_coccion.TC >= tmprture_coccion.max)
 				{
-					Tcoccion.TC = Tcoccion.max;
+					tmprture_coccion.TC = tmprture_coccion.max;
 				}
 			}
 		}
@@ -125,7 +130,7 @@ int8_t psmode_program(void)
 			}
 			else
 			{
-				MAX6675_formatText3dig(Tcoccion.TC, str);
+				MAX6675_formatText3dig(tmprture_coccion.TC, str);
 			}
 			lcdan_set_cursor(DISP_CURSOR_BASKETRIGHT_START_X, 0);
 			lcdan_print_string(str);
@@ -150,10 +155,9 @@ int8_t psmode_program(void)
 		{
 			codret = 1;
 			fryer.ps_program = ps_reset;
-
-			//fryer.psmode = PSMODE_OPERATIVE;
 			fryer.ps_operative = ps_reset;
-			//psmode_operative_init();
+
+			eeprom_update_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
 
 			blinkIsActive = 0;
 		}

@@ -82,10 +82,9 @@ void psmode_operative_init(void)
 	{
 		fryer.basket[i].blink.timerBlink_K =  PSMODE_OPERATIVE_BLINK_TIMER_KMAX;
 		//
-
-		fryer.basket[i].cookCycle.time = time_k[i];
+		eeprom_read_block((struct _t *)(&fryer.basket[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 		//carga desde la eeprom de manera temporal
-		basket_temp[i].cookCycle.time = time_k[i];
+		basket_temp[i].cookCycle.time = fryer.basket[i].cookCycle.time;
 
 
 		//return to visualizing decrement-timing
@@ -201,9 +200,8 @@ void psmode_operative(void)
 					fryer.basket[i].cookCycle.bf.on = 0;
 
 					//load from eeprom
-					fryer.basket[i].cookCycle.time= time_k[i];
-					//fryer.basket[i].cookCycle.time.min = time_k[i].min;
-					//fryer.basket[i].cookCycle.time.sec = time_k[i].sec;
+					//fryer.basket[i].cookCycle.time= COOKTIME[i];
+					eeprom_read_block((struct _t *)(&fryer.basket[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 
 					//return to viewing decrement timing
 					fryer.basket[i].cookCycle.counterTicks = 0x00;
@@ -271,7 +269,7 @@ void psmode_operative(void)
 
 					if (fryer.basket[i].cookCycle.bf.on == 1)//osea en caliente se cambio el setpoint
 					{
-						cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &time_k[i], &fryer.basket[i].cookCycle.time);
+						cookCycle_hotUpdate(&basket_temp[i].cookCycle.time, &COOKTIME[i], &fryer.basket[i].cookCycle.time);
 						//return with fryer.basket[i].cookCycle.time UPDATED!
 
 					}
@@ -292,7 +290,8 @@ void psmode_operative(void)
 			fryer.basket[i].bf.prepareReturnToKBDefault = 0;
 			//
 			//update eeprom
-			time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+			//COOKTIME[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+			eeprom_update_block((struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 
 			//load from eeprom
 			fryer.basket[i].cookCycle.time = basket_temp[i].cookCycle.time;
@@ -413,7 +412,7 @@ void psmode_operative(void)
 //			//Salir actualizando eeprom
 //			for (int i=0; i<BASKET_MAXSIZE; i++)
 //			{
-//				time_k[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
+//				COOKTIME[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
 //				//
 //				ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
 //			}
