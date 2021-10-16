@@ -83,6 +83,7 @@ struct _mainflag mainflag;
 
 const struct _process ps_reset;
 struct _fryer fryer;
+const struct _fryer fryer_reset;
 
 struct _job job_captureTemperature;
 const struct _job job_reset;
@@ -156,11 +157,40 @@ int16_t mypid0_adjust_kei_windup(void)
 	return error;
 }
 
-int main(void)
+void kbmode_default(struct _kb_basket *kb)
 {
-	int8_t sm0 = 0;
-	int c = 0;
-
+	struct _key_prop key_prop = { 0 };
+	//
+	key_prop = propEmpty;
+	//
+	key_prop.uFlag.f.onKeyPressed = 1;
+	ikb_setKeyProp(kb->sleep,key_prop);
+	ikb_setKeyProp(kb->startStop ,key_prop);
+	//
+	key_prop.uFlag.f.onKeyPressed = 0;
+	key_prop.uFlag.f.atTimeExpired2 = 1;
+	ikb_setKeyProp(kb->program ,key_prop);//programacion
+	//
+	key_prop.uFlag.f.atTimeExpired2 = 0;
+	//
+	key_prop.uFlag.f.onKeyPressed = 1;
+	key_prop.uFlag.f.reptt = 1;
+	key_prop.numGroup = 0;
+	key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
+	key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
+	ikb_setKeyProp(kb->down ,key_prop);
+	ikb_setKeyProp(kb->up ,key_prop);
+}
+void kbmode_2basket_set_default(void)
+{
+	for (int i=0; i<BASKET_MAXSIZE; i++)
+	{
+		kbmode_default(&fryer.basket[i].kb);
+	}
+}
+void fryer_init(void)
+{
+	fryer = fryer_reset;
 	//++--
 	/* se usara la etiqueta KB_LYOUT_PROGRAM y no el [i]kb.program, xq es comun para ambos */
 	fryer.basket[BASKET_LEFT].kb.startStop = KB_LYOUT_LEFT_STARTSTOP;
@@ -182,6 +212,14 @@ int main(void)
 	fryer.basket[BASKET_RIGHT].display.cursor.x = DISP_CURSOR_BASKETRIGHT_START_X;//0x0B;
 	fryer.basket[BASKET_RIGHT].display.cursor.y = 0x00;
 	//--++
+}
+
+int main(void)
+{
+	int8_t sm0 = 0;
+	int c = 0;
+
+	fryer_init();
 
 	//Tiempo Necesario para estabilizar la tarjeta
 	//__delay_ms(2000);//estabilizar tarjeta de deteccion
@@ -251,11 +289,6 @@ int main(void)
 //	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
 //	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 
-	//x default en EEPROM
-//	tmprture_coccion.TC = 350;
-//	tmprture_coccion.max = 450;
-//	tmprture_coccion.min = 50;
-
 	eeprom_read_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
 	//
 	mypid0_set();	/* Once*/
@@ -266,11 +299,7 @@ int main(void)
 	pid_pwm_set_pin(&mypid0);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
 
 	//set kb
-	for (int i=0; i<BASKET_MAXSIZE; i++)
-	{
-		kbmode_setDefault1(&fryer.basket[i].kb);
-		//fryer.basket[i].kbmode = KBMODE_DEFAULT;
-	}
+	//kbmode_2basket_set_default();
 	//
 	while (1)
 	{
@@ -298,13 +327,22 @@ int main(void)
 
 					if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)	//active in low
 					{
-						sm0 = 0x00;
+						/* ON*/
 					}
 					else
 					{
+						/* OFF */
 						lcdan_set_cursor(6, 0);
 						lcdan_print_PSTRstring(PSTR("OFF"));
+
 					}
+					/* en ambos casos, iniciar desde el principio*/
+					sm0 = 0x00;
+					fryer_init();
+					//fryer.ps_operative = ps_reset;
+					//fryer.ps_program = ps_reset;
+
+					//
 					pinGetLevel_clearChange(PGLEVEL_LYOUT_SWONOFF);
 				}
 				//chispero();
@@ -318,6 +356,8 @@ int main(void)
 		{
 			if (sm0 == 0)
 			{
+				kbmode_2basket_set_default();
+
 				lcdan_set_cursor(0, 0);
 				lcdan_print_PSTRstring(PSTR("MELT"));
 				//
@@ -335,8 +375,6 @@ int main(void)
 			else if (sm0 == 2)
 			{
 				//Precalentamiento
-
-				//if (1)//(temper_measured >= Temper_Precalentamiento)
 				if (TCtemperature >= mypid0.algo.sp)
 				{
 					//
@@ -371,16 +409,14 @@ int main(void)
 						//Salir actualizando eeprom
 						for (int i=0; i<BASKET_MAXSIZE; i++)
 						{
-							//COOKTIME[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
-
 							eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 						}
+						//
 					}
 				}
 
 				//ikb_flush();
 			}
-
 			//
 			if (fryer.bf.program_mode == 1)
 			{
@@ -393,7 +429,7 @@ int main(void)
 						//set kb
 						for (int i=0; i<BASKET_MAXSIZE; i++)
 						{
-							kbmode_setDefault1(&fryer.basket[i].kb);
+							kbmode_default(&fryer.basket[i].kb);
 						}
 
 						lcdan_clear();

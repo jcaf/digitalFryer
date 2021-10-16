@@ -25,30 +25,6 @@ void build_cookCycle_string(struct _t *t, char *str)
 	strcat(str, buff);
 }
 
-void kbmode_setDefault1(struct _kb_basket *kb)
-{
-	struct _key_prop key_prop = { 0 };
-	//
-	key_prop = propEmpty;
-	//
-	key_prop.uFlag.f.onKeyPressed = 1;
-	ikb_setKeyProp(kb->sleep,key_prop);
-	ikb_setKeyProp(kb->startStop ,key_prop);
-	//
-	key_prop.uFlag.f.onKeyPressed = 0;
-	key_prop.uFlag.f.atTimeExpired2 = 1;
-	ikb_setKeyProp(kb->program ,key_prop);//programacion
-	//
-	key_prop.uFlag.f.atTimeExpired2 = 0;
-	//
-	key_prop.uFlag.f.onKeyPressed = 1;
-	key_prop.uFlag.f.reptt = 1;
-	key_prop.numGroup = 0;
-	key_prop.repttTh.breakTime = (uint16_t) 200.0 / KB_PERIODIC_ACCESS;
-	key_prop.repttTh.period = (uint16_t) 50.0 / KB_PERIODIC_ACCESS;
-	ikb_setKeyProp(kb->down ,key_prop);
-	ikb_setKeyProp(kb->up ,key_prop);
-}
 
 
 void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *TcookCycle_setPoint_current,struct _t *Tcookcycle_timingrunning)
@@ -104,7 +80,7 @@ void psmode_operative_init(void)
 		}
 
 		//
-		kbmode_setDefault1(&fryer.basket[i].kb);
+		kbmode_default(&fryer.basket[i].kb);
 		fryer.basket[i].kbmode = KBMODE_DEFAULT;
 	}
 	//--+
@@ -200,7 +176,6 @@ void psmode_operative(void)
 					fryer.basket[i].cookCycle.bf.on = 0;
 
 					//load from eeprom
-					//fryer.basket[i].cookCycle.time= COOKTIME[i];
 					eeprom_read_block((struct _t *)(&fryer.basket[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 
 					//return to viewing decrement timing

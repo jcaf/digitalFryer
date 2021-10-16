@@ -137,8 +137,6 @@ struct _process
 struct _fryer
 {
 		struct _basket basket[BASKET_MAXSIZE];
-		//int8_t kb_mode;
-		//int8_t psmode;
 		struct _fryer_bf
 		{
 			unsigned program_mode:1;
@@ -152,6 +150,8 @@ struct _fryer
 extern const struct _process ps_reset;
 extern struct _fryer fryer;
 
+void kbmode_default(struct _kb_basket *kb);
+void kbmode_2basket_set_default(void);
 
 struct _job
 {
