@@ -316,6 +316,11 @@ void psmode_operative(void)
 						blink_reset(BLINK_TOGGLE_SET_TEXT);
 						fryer.basket[i].display.bf.print_cookCycle = 0;
 						fryer.basket[i].cookCycle.bf.blinkDone = 1;
+						//
+						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+						indicator_On();
+
+
 					}
 				}
 

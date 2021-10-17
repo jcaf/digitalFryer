@@ -131,7 +131,7 @@ void MAX6675_convertIntTmptr2str_wformatPrintComplete(int16_t temper, char *str_
 #endif
 
 
-#define TEMPERATURE_SMOOTHALG_MAXSIZE 8
+#define TEMPERATURE_SMOOTHALG_MAXSIZE 4// 8
 static int16_t smoothVector[TEMPERATURE_SMOOTHALG_MAXSIZE];
 
 struct _smoothAlg smoothAlg_temp;
@@ -188,8 +188,11 @@ tendria que cambiar la temperature_job para saber cuando tiene correctamente la 
 para poder leer al inicio del programa, ojo xq se necesita el flag de systick
 *****************************************************/
 int TCtemperature;
-void temperature_job(void)
+//void
+int8_t temperature_job(void)
 {
+	int8_t codret = 0;
+
 	static int8_t MAX6675_sm0;
 	static uint16_t MAX6675_ConversionTime_access;
 	int8_t MAX6675_job_rpta;
@@ -220,6 +223,7 @@ void temperature_job(void)
 	{
 		if (MAX6675_smoothAlg_nonblock_job( &TCtemperature ))
 		{
+			/* fin del proceso */
 			//Por defecto MAX6675 entrega en grados Celsius
 			if (pgrmode.bf.unitTemperature == FAHRENHEIT)
 			{
@@ -227,6 +231,9 @@ void temperature_job(void)
 			}
 
 			MAX6675_sm0 = 0x00;
+
+			codret = 1;	//fin del proceso
 		}
 	}
+	return codret;
 }

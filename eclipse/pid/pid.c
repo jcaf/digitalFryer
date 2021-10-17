@@ -5,9 +5,21 @@
 int16_t pid_get_output(struct PID* pid, int16_t error);
 void pid_pwm_control(struct PID* pid);
 
-void pid_pwm_set_pin(struct PID *pid)
-{
 
+void pid_pwm_set_pin(struct PID *pid, int8_t pin)
+{
+	if (pin == 1)
+	{
+		PinTo1(*pid->pwm.io.port, pid->pwm.io.pin);
+	}
+	else
+	{
+		PinTo0(*pid->pwm.io.port, pid->pwm.io.pin);
+	}
+
+}
+void pid_pwm_stablish_levelpin(struct PID *pid)
+{
 	pid->pwm.dc.ktop_uploaded_ms = pid->pwm.dc.ktop_ms;
 	if (pid->pwm.dc.ktop_uploaded_ms > 0)
 	{
@@ -19,7 +31,7 @@ void pid_pwm_set_pin(struct PID *pid)
 	}
 }
 
-void pid_set_ktop_ms(struct PID *pid, int16_t error)
+void pid_find_ktop_ms(struct PID *pid, int16_t error)
 {
 	/* 2. get and convert to time the output of pid_algorithm (adimensional) */
 	/* Obtain ktop_ms*/
@@ -32,7 +44,7 @@ void pid_set_ktop_ms(struct PID *pid, int16_t error)
 }
 void pid_job(struct PID *pid, int16_t error)
 {
-	pid_set_ktop_ms(pid, error);
+	pid_find_ktop_ms(pid, error);
 	//
 	/* 3. */
 	if (mainflag.sysTickMs)
@@ -111,7 +123,7 @@ void pid_pwm_control(struct PID* pid)
 		//
 		pid->pwm.timing.sm0 = 0;
 		//
-		pid_pwm_set_pin(pid);
+		pid_pwm_stablish_levelpin(pid);
 //		pid->pwm.dc.ktop_uploaded_ms = pid->pwm.dc.ktop_ms;	/* update, transfer*/
 //		if (pid->pwm.dc.ktop_uploaded_ms > 0)
 //		{

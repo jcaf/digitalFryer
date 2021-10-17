@@ -28,7 +28,7 @@ int8_t MAX6675_job(void);
 int8_t MAX6675_smoothAlg_nonblock_job(int16_t *TCtemperature);
 
 extern int TCtemperature;
-void temperature_job(void);
+int8_t temperature_job(void);
 
 enum _THTEMPERATURE_UNITS
 {

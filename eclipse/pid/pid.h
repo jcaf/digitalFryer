@@ -1,7 +1,7 @@
 #ifndef PID_H_
 #define PID_H_
 
-//#define PID_ALGORIGHM_INTEGERS
+#define PID_ALGORIGHM_INTEGERS
 //#define PID_ALGORIGHM_FLOATS
 
 	struct PIDtiming
@@ -22,7 +22,7 @@
 
 	struct Algorithm
 	{
-		//#ifdef PID_ALGORIGHM_INTEGERS
+		#ifdef PID_ALGORIGHM_INTEGERS
 			int16_t sp;			/* set point */
 			//
 			int16_t ei; 		/* error integral */
@@ -36,22 +36,22 @@
 			int8_t pid_out_min_ms;
 			//
 			int8_t scaler_time_ms;
-//		#else
-//			float sp;			/* set point */
-//			//
-//			float ei; 		/* error integral */
-//			float eprevio;	/* error previo */
-//			float ed;			/* error derivativo	*/
-//			//
-//			float kei_windup_max;	/* max windup for error integral */
-//			float kei_windup_min;	/* min windup for error integral */
-//			//
-//			float pid_out_max_ms;
-//			float pid_out_min_ms;
-//			//
-//			float scaler_time_ms;
-//
-//		#endif
+		#else
+			float sp;			/* set point */
+			//
+			float ei; 		/* error integral */
+			float eprevio;	/* error previo */
+			float ed;			/* error derivativo	*/
+			//
+			float kei_windup_max;	/* max windup for error integral */
+			float kei_windup_min;	/* min windup for error integral */
+			//
+			float pid_out_max_ms;
+			float pid_out_min_ms;
+			//
+			float scaler_time_ms;
+
+		#endif
 
 
 		float kp;
@@ -77,7 +77,7 @@ struct PID
 	}pwm;
 };
 void pid_job(struct PID *pid, int16_t error);
-void pid_pwm_set_pin(struct PID *pid);
-void pid_set_ktop_ms(struct PID *pid, int16_t error);
-
+void pid_pwm_stablish_levelpin(struct PID *pid);
+void pid_find_ktop_ms(struct PID *pid, int16_t error);
+void pid_pwm_set_pin(struct PID *pid, int8_t pin);
 #endif // PID_H_

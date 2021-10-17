@@ -134,16 +134,17 @@ void mypid0_set(void)
 	mypid0.pwm.io.port = &PORTWxSOL_GAS_QUEMADOR;
 	mypid0.pwm.io.pin = PINxKB_SOL_GAS_QUEMADOR;
 	//
-	mypid0.algo.sp = 10;//300;
+	//mypid0.algo.sp = 300;
 }
 
 /* cada objeto PID es particular y necesita ser afinado antes de pasar al control */
 int16_t mypid0_adjust_kei_windup(void)
 {
 	/* 1. error es target-specific */
-	int16_t pv = TCtemperature;
+	//int16_t pv = TCtemperature;
 	//int16_t pv = 110;
-	int16_t error =  mypid0.algo.sp - pv;
+	//int16_t error =  mypid0.algo.sp - pv;
+	int16_t error =  tmprture_coccion.TC - TCtemperature;
 
 	/* adjust windup for integral error */
 	if (error > 5)
@@ -218,6 +219,7 @@ int main(void)
 {
 	int8_t sm0 = 0;
 	int c = 0;
+	eeprom_read_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
 
 	fryer_init();
 
@@ -281,7 +283,6 @@ int main(void)
 	TCCR2 = (1 << WGM21) | (1 << WGM20) | (1 << COM21) | (0 << COM20)
 			| (0 << CS22) | (0 << CS21) | (1 << CS20);	//NO Preescaling
 	ConfigOutputPin(CONFIGIOxOC2, PINxKB_OC2);
-
 	//
 	TIMSK |= (1 << OCIE0);
 	sei();
@@ -289,18 +290,10 @@ int main(void)
 //	PinTo1(PORTWxCHISPERO_ONOFF, PINxCHISPERO_ONOFF);
 //	PinTo1(PORTWxSOL_GAS_PILOTO, PINxKB_SOL_GAS_PILOTO);
 
-	eeprom_read_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
-	//
 	mypid0_set();	/* Once*/
-	//
-	/* aqui necesito tener la temperatura estable... cambiar la fx */
-	int16_t error = mypid0_adjust_kei_windup(); /* dejar preparado para job()*/
-	pid_set_ktop_ms(&mypid0, error);
-	pid_pwm_set_pin(&mypid0);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
 
-	//set kb
 	//kbmode_2basket_set_default();
-	//
+
 	while (1)
 	{
 		if (isr_flag.sysTickMs)
@@ -309,150 +302,174 @@ int main(void)
 			mainflag.sysTickMs = 1;
 		}
 
-		//----------------------
-		if (mainflag.sysTickMs)
+		if (sm0 == 0)
 		{
-			if (++c == (20/SYSTICK_MS))    //20ms
+			/* sm0 == 0, es un init para todos los procesos q necesitan de mainflag.sysTickMs al iniciar el sistema*/
+			if ( temperature_job() == 1)
 			{
-				c = 0;
-				//
-				pinGetLevel_job();
-				//---------------------------
-				if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_SWONOFF))
-				{
-					indicator_setKSysTickTime_ms(75/SYSTICK_MS);
-					indicator_On();
-					//
-					lcdan_clear();
-
-					if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)	//active in low
-					{
-						/* ON*/
-					}
-					else
-					{
-						/* OFF */
-						lcdan_set_cursor(6, 0);
-						lcdan_print_PSTRstring(PSTR("OFF"));
-
-					}
-					/* en ambos casos, iniciar desde el principio*/
-					sm0 = 0x00;
-					fryer_init();
-					//fryer.ps_operative = ps_reset;
-					//fryer.ps_program = ps_reset;
-
-					//
-					pinGetLevel_clearChange(PGLEVEL_LYOUT_SWONOFF);
-				}
-				//chispero();
-				ikb_job();
-			}
-		}
-		temperature_job();
-		indicator_job();//actua sobre el buzzer
-		//
-		if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)
-		{
-			if (sm0 == 0)
-			{
-				kbmode_2basket_set_default();
-
-				lcdan_set_cursor(0, 0);
-				lcdan_print_PSTRstring(PSTR("MELT"));
-				//
-				igDeteccFlama_resetJob();
 				sm0++;
 			}
-			else if (sm0 == 1)
+		}
+		else
+		{
+			//----------------------
+			if (mainflag.sysTickMs)
 			{
-				if (igDeteccFlama_doJob())
+				if (++c == (20/SYSTICK_MS))    //20ms
 				{
-					sm0++;    	//OK...Ignicion+deteccion de flama OK
-								//PID_Control -> setpoint = Tprecalentamiento
+					c = 0;
+					//
+					pinGetLevel_job();
+					//---------------------------
+					if (pinGetLevel_hasChanged(PGLEVEL_LYOUT_SWONOFF))
+					{
+						indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+						indicator_On();
+						//
+						lcdan_clear();
+
+						if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)	//active in low
+						{
+							/* ON*/
+
+							/* forzar en sacar el nivel del PWM para el primer periodo, ya que T = 10s*/
+							int16_t error = mypid0_adjust_kei_windup(); /* dejar preparado para job()*/
+							pid_find_ktop_ms(&mypid0, error);
+							pid_pwm_stablish_levelpin(&mypid0);//set PWM por primera vez//tener de inmediato el valor de ktop_ms
+						}
+						else
+						{
+							/* OFF */
+
+							/* pin to 0*/
+							pid_pwm_set_pin(&mypid0, 0);
+
+							lcdan_set_cursor(6, 0);
+							lcdan_print_PSTRstring(PSTR("OFF"));
+
+						}
+						/* en ambos casos, iniciar desde el principio*/
+						sm0 = 0x00;
+						fryer_init();
+						//
+						pinGetLevel_clearChange(PGLEVEL_LYOUT_SWONOFF);
+					}
+					//chispero();
+					ikb_job();
 				}
 			}
-			else if (sm0 == 2)
+			
+			
+			//
+			if (pinGetLevel_level(PGLEVEL_LYOUT_SWONOFF)== 0)
 			{
-				//Precalentamiento
-				if (TCtemperature >= mypid0.algo.sp)
+				if (sm0 == 1)
 				{
-					//
-					indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-					indicator_On();
-					//
-					fryer.bf.operative_mode = 1;
+					kbmode_2basket_set_default();
 
+					lcdan_set_cursor(0, 0);
+					lcdan_print_PSTRstring(PSTR("MELT"));
+					//
+					igDeteccFlama_resetJob();
 					sm0++;
 				}
-			}
-			else if (sm0 == 3)
-			{
-
-			}
-
-			if (fryer.bf.program_mode == 0)//se autoexcluye
-			{
-				if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
+				else if (sm0 == 2)
 				{
-					ikb_key_was_read(KB_LYOUT_PROGRAM);
-
-					if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
+					if (igDeteccFlama_doJob())
 					{
-						fryer.bf.program_mode = 1;
+						sm0++;    	//OK...Ignicion+deteccion de flama OK
+									//PID_Control -> setpoint = Tprecalentamiento
+					}
+				}
+				else if (sm0 == 3)
+				{
+					//Precalentamiento
+					//if (TCtemperature >= mypid0.algo.sp)
+					if (TCtemperature >= tmprture_coccion.TC)
+					{
 						//
-						fryer.ps_operative = ps_reset;
-						fryer.ps_program = ps_reset;
 						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
 						indicator_On();
-
-						//Salir actualizando eeprom
-						for (int i=0; i<BASKET_MAXSIZE; i++)
-						{
-							eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
-						}
 						//
+						fryer.bf.operative_mode = 1;
+
+						sm0++;
 					}
 				}
-
-				//ikb_flush();
-			}
-			//
-			if (fryer.bf.program_mode == 1)
-			{
-				if (psmode_program() == 1)
+				else if (sm0 == 4)
 				{
-					fryer.bf.program_mode = 0;
 
-					if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+				}
+
+				if (fryer.bf.program_mode == 0)//se autoexcluye
+				{
+					if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 					{
-						//set kb
-						for (int i=0; i<BASKET_MAXSIZE; i++)
-						{
-							kbmode_default(&fryer.basket[i].kb);
-						}
+						ikb_key_was_read(KB_LYOUT_PROGRAM);
 
-						lcdan_clear();
-						lcdan_set_cursor(0, 0);
-						lcdan_print_PSTRstring(PSTR("MELT"));
+						if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
+						{
+							fryer.bf.program_mode = 1;
+							//
+							fryer.ps_operative = ps_reset;
+							fryer.ps_program = ps_reset;
+							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+							indicator_On();
+
+							//Salir actualizando eeprom
+							for (int i=0; i<BASKET_MAXSIZE; i++)
+							{
+								eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
+							}
+							//
+						}
+					}
+
+					//ikb_flush();
+				}
+				//
+				if (fryer.bf.program_mode == 1)
+				{
+					if (psmode_program() == 1)
+					{
+						fryer.bf.program_mode = 0;
+
+						if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+						{
+							//set kb
+							for (int i=0; i<BASKET_MAXSIZE; i++)
+							{
+								kbmode_default(&fryer.basket[i].kb);
+							}
+
+							lcdan_clear();
+							lcdan_set_cursor(0, 0);
+							lcdan_print_PSTRstring(PSTR("MELT"));
+						}
 					}
 				}
+				//
+				if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
+				{
+					psmode_operative();
+				}
+
+				/* PID control */
+				int16_t error = mypid0_adjust_kei_windup();
+				pid_job(&mypid0, error);
+				//
 			}
-			//
-			if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
+			else //switch OFF
 			{
-				psmode_operative();
+
 			}
 
-		}
-		else //switch OFF
-		{
+			/* actua sobre el buzzer */
+			indicator_job();
 
-		}
+			temperature_job();
 
-		/* PID control */
-		int16_t error = mypid0_adjust_kei_windup();
-		pid_job(&mypid0, error);
+		}//end sm0 == 0
 
 		/* ---------- */
 		mainflag.sysTickMs = 0;
