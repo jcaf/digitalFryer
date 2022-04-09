@@ -133,16 +133,25 @@ struct _process
 		int8_t sm0;
 };
 
+enum _FRYER_VIEWMODE
+{
+	FRYER_VIEWMODE_PREHEATING = 0,
+    FRYER_VIEWMODE_COOK,
+    FRYER_VIEWMODE_PROGRAM,
+    FRYER_VIEWMODE_VIEWCOOKTEMP
+};
 
 struct _fryer
 {
 		struct _basket basket[BASKET_MAXSIZE];
 		struct _fryer_bf
 		{
+			unsigned preheating:1;
 			unsigned program_mode:1;
 			unsigned operative_mode:1;
-			unsigned __a:6;
+			unsigned __a:5;
 		}bf;
+		int8_t viewmode;
 
 		struct _process ps_program;
 		struct _process ps_operative;

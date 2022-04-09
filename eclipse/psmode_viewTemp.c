@@ -37,7 +37,7 @@ int8_t psmode_viewTemp(void)
 	else if (fryer.ps_viewTemp.sm0 == 1)
 	{
 		lcdan_set_cursor(DISP_CURSOR_BASKETLEFT_START_X, 0);
-		lcdan_print_string("OIL  ");
+		lcdan_print_string("OIL2 ");
 		//
 		lcdan_set_cursor(0x0E, 0);//PRINT SYMBOL DEGREE
 		lcdan_write_data(0b11011111);//
@@ -60,15 +60,16 @@ int8_t psmode_viewTemp(void)
 	}
 	else if (fryer.ps_viewTemp.sm0 == 3)
 	{
-		fryer.ps_viewTemp.sm0 = 0;
 		//
 		if (fryer.ps_viewTemp.sm0 == 3)//EXIT
 		{
 			codret = 1;
+
 			fryer.ps_viewTemp = ps_reset;
-			fryer.ps_program = ps_reset;
-			fryer.ps_operative = ps_reset;
+			//fryer.ps_program = ps_reset;
+			//fryer.ps_operative = ps_reset;
 		}
+
 	}
 
 	//al ultimo q evalue KB PROGRAM
