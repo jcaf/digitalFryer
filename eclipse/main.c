@@ -219,6 +219,8 @@ int main(void)
 {
 	int8_t sm0 = 0;
 	int c = 0;
+	char str[10];
+
 	eeprom_read_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
 
 	fryer_init();
@@ -256,10 +258,12 @@ int main(void)
 	indicator_setPortPin(&PORTWxBUZZER, PINxBUZZER);
 	indicator_setKSysTickTime_ms(75/SYSTICK_MS);
 
+
 	//PinTo1(PORTWxFLAME_DETECC, PINxFLAME_DETECC);//Active pull-up
 	//ConfigInputPin(PORTRxFLAME_DETECC, PINxFLAME_DETECC);
 
 	lcdan_init();
+
 	InitSPI_MASTER();
 	//
 	//ADC_init(ADC_MODE_SINGLE_END);
@@ -307,7 +311,19 @@ int main(void)
 			/* sm0 == 0, es un init para todos los procesos q necesitan de mainflag.sysTickMs al iniciar el sistema*/
 			if ( temperature_job() == 1)
 			{
-				sm0++;
+				if (TCtemperature == MAX6675_THERMOCOUPLED_OPEN)
+				{
+					lcdan_set_cursor(0, 0);
+					lcdan_print_PSTRstring(PSTR("Error TH:"));
+					MAX6675_formatText3dig(TCtemperature, str);
+					lcdan_set_cursor(DISP_CURSOR_BASKETRIGHT_START_X, 0);
+					lcdan_print_string(str);
+				}
+				else
+				{
+					sm0++;
+				}
+
 			}
 		}
 		else
@@ -423,6 +439,17 @@ int main(void)
 							}
 							//
 						}
+						//added 7 abr 2022
+						else//KB_BEFORE_THR
+						{
+							/* Visualizar la temperatura */
+							fryer.bf.program_mode = 2;//cambiar a un numero
+							//
+							fryer.ps_operative = ps_reset;
+							fryer.ps_program = ps_reset;
+							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+							indicator_On();
+						}
 					}
 
 					//ikb_flush();
@@ -448,7 +475,30 @@ int main(void)
 						}
 					}
 				}
-				//
+				//added 7 ab 2022
+				if (fryer.bf.program_mode == 2)
+				{
+					if (psmode_program() == 1)
+					{
+						fryer.bf.program_mode = 0;
+
+						if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+						{
+							//set kb
+							for (int i=0; i<BASKET_MAXSIZE; i++)
+							{
+								kbmode_default(&fryer.basket[i].kb);
+							}
+
+							lcdan_clear();
+							lcdan_set_cursor(0, 0);
+							lcdan_print_PSTRstring(PSTR("MELT"));
+						}
+					}
+				}
+
+				//++++++++++++++++
+
 				if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
 				{
 					psmode_operative();

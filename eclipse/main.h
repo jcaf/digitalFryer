@@ -146,6 +146,7 @@ struct _fryer
 
 		struct _process ps_program;
 		struct _process ps_operative;
+		struct _process ps_viewTemp;//added 7 ab 2022
 };
 extern const struct _process ps_reset;
 extern struct _fryer fryer;

@@ -211,6 +211,7 @@ int8_t temperature_job(void)
 				{
 					MAX6675_ConversionTime_access = 0;//reset the count with valid thermocouple value
 					TCtemperature = MAX6675_THERMOCOUPLED_OPEN;
+					codret = 1;
 				}
 				else if (MAX6675_job_rpta == 1)//00..1024C
 				{
