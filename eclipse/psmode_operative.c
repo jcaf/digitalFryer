@@ -10,8 +10,6 @@
 #define PSMODE_OPERATIVE_BLINK_TIMER_KMAX (400/SYSTICK_MS)			//Xms/10ms de acceso
 #define PSMODE_OPERATIVE_EDITCYCLE_TIMERTIMEOUT_K (3000/SYSTICK_MS)	//5000ms/10ms
 
-
-
 //build to print Left time mm:ss
 void build_cookCycle_string(struct _t *t, char *str)
 {
@@ -24,8 +22,6 @@ void build_cookCycle_string(struct _t *t, char *str)
 	paddingLeftwZeroes(buff, 2);
 	strcat(str, buff);
 }
-
-
 
 void cookCycle_hotUpdate(struct _t *TcookCycle_setPoint_toUpdate, struct _t *TcookCycle_setPoint_current,struct _t *Tcookcycle_timingrunning)
 {
@@ -71,7 +67,8 @@ void psmode_operative_init(void)
 		fryer.basket[i].display.owner = DISPLAY_TIMING;
 		fryer.basket[i].display.bf.print_cookCycle = 1;
 		//
-		if (fryer.basket[i].display.bf.print_cookCycle == 1)
+		//if (fryer.basket[i].display.bf.print_cookCycle == 1)
+		if ((fryer.basket[i].display.bf.print_cookCycle == 1)	&& (fryer.viewmode == FRYER_VIEWMODE_COOK))
 		{
 			build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
 			lcdan_clear();
@@ -185,7 +182,8 @@ void psmode_operative(void)
 					fryer.basket[i].display.bf.print_cookCycle = 1;
 					fryer.basket[i].cookCycle.bf.blinkDone = 0;
 					//
-					if (fryer.basket[i].display.bf.print_cookCycle == 1)
+					//if (fryer.basket[i].display.bf.print_cookCycle == 1)
+					if ((fryer.basket[i].display.bf.print_cookCycle == 1) && (fryer.viewmode == FRYER_VIEWMODE_COOK))
 					{
 						build_cookCycle_string(&fryer.basket[i].cookCycle.time, str);
 						lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
@@ -217,16 +215,19 @@ void psmode_operative(void)
 			{
 				fryer.basket[i].blink.bf.update = 0;
 				//
-				if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
+				if (fryer.viewmode == FRYER_VIEWMODE_COOK)//add 2022
 				{
-					strcpy(str,"     ");
+					if (fryer.basket[i].blink.bf.toggle == BLINK_TOGGLE_SET_BLANK)
+					{
+						strcpy(str,"     ");
+					}
+					else
+					{
+						build_cookCycle_string(&basket_temp[i].cookCycle.time, str);
+					}
+					lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
+					lcdan_print_string(str);
 				}
-				else
-				{
-					build_cookCycle_string(&basket_temp[i].cookCycle.time, str);
-				}
-				lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
-				lcdan_print_string(str);
 				//
 			}
 			//local blink - end
@@ -329,7 +330,8 @@ void psmode_operative(void)
 		}
 
 		//print timing decrement mm:ss
-		if (fryer.basket[i].display.owner == DISPLAY_TIMING)
+		//if (fryer.basket[i].display.owner == DISPLAY_TIMING)
+		if ((fryer.basket[i].display.owner == DISPLAY_TIMING) && (fryer.viewmode == FRYER_VIEWMODE_COOK))
 		{
 			if (fryer.basket[i].display.bf.print_cookCycle == 1)
 			{
@@ -352,7 +354,6 @@ void psmode_operative(void)
 				}
 				lcdan_set_cursor(fryer.basket[i].display.cursor.x, fryer.basket[i].display.cursor.y);
 				lcdan_print_string(str);
-
 			}
 		}
 		//

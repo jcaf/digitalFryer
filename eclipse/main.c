@@ -71,6 +71,7 @@ Functions that are there, but shouldn't be called directly, or have obscure uses
 #include "adc.h"
 #include "psmode_program.h"
 #include "psmode_operative.h"
+#include "psmode_viewTemp.h"
 #include "indicator/indicator.h"
 #include "pid/pid.h"
 
@@ -386,6 +387,10 @@ int main(void)
 					lcdan_set_cursor(0, 0);
 					lcdan_print_PSTRstring(PSTR("MELT"));
 					//
+					fryer.bf.preheating = 1;
+					fryer.viewmode = FRYER_VIEWMODE_PREHEATING;
+					//
+
 					igDeteccFlama_resetJob();
 					sm0++;
 				}
@@ -407,7 +412,19 @@ int main(void)
 						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
 						indicator_On();
 						//
+						//fryer.bf.operative_mode = 1;
+						//
+						fryer.bf.preheating = 0;
+						fryer.viewmode = FRYER_VIEWMODE_COOK;
+						//
+						for (int i=0; i<BASKET_MAXSIZE; i++)//added
+						{
+							kbmode_default(&fryer.basket[i].kb);
+							fryer.basket[i].kbmode = KBMODE_DEFAULT;
+						}
+						//
 						fryer.bf.operative_mode = 1;
+						//
 
 						sm0++;
 					}
@@ -417,52 +434,101 @@ int main(void)
 
 				}
 
-				if (fryer.bf.program_mode == 0)//se autoexcluye
+				if ((fryer.viewmode == FRYER_VIEWMODE_PREHEATING) || (fryer.viewmode == FRYER_VIEWMODE_COOK))
 				{
-					if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
+					if (1)//if (fryer.bf.program_mode == 0)//se autoexcluye
 					{
-						ikb_key_was_read(KB_LYOUT_PROGRAM);
-
-						if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
+						if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 						{
-							fryer.bf.program_mode = 1;
-							//
-							fryer.ps_operative = ps_reset;
-							fryer.ps_program = ps_reset;
-							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-							indicator_On();
+							ikb_key_was_read(KB_LYOUT_PROGRAM);
 
-							//Salir actualizando eeprom
-							for (int i=0; i<BASKET_MAXSIZE; i++)
+							if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
 							{
-								eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
+								//fryer.bf.program_mode = 1;
+								//
+								//fryer.ps_operative = ps_reset;
+
+								fryer.viewmode = FRYER_VIEWMODE_PROGRAM;
+								fryer.ps_program = ps_reset;
+								//
+
+								indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+								indicator_On();
+
+								//Salir actualizando eeprom
+								for (int i=0; i<BASKET_MAXSIZE; i++)
+								{
+									eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
+								}
+								//
 							}
-							//
-						}
-						//added 7 abr 2022
-						else//KB_BEFORE_THR
-						{
-							/* Visualizar la temperatura */
-							fryer.bf.program_mode = 2;//cambiar a un numero
-							//
-							fryer.ps_operative = ps_reset;
-							fryer.ps_program = ps_reset;
-							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-							indicator_On();
+							//added 7 abr 2022
+							else//KB_BEFORE_THR
+							{
+								/* Visualizar la temperatura */
+								fryer.viewmode = FRYER_VIEWMODE_VIEWCOOKTEMP;
+								//
+								fryer.ps_viewTemp = ps_reset;
+								//fryer.ps_operative = ps_reset;
+								//fryer.ps_program = ps_reset;
+
+								indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+								indicator_On();
+							}
 						}
 					}
-
-					//ikb_flush();
 				}
 				//
-				if (fryer.bf.program_mode == 1)
+				if (fryer.viewmode == FRYER_VIEWMODE_PROGRAM)
 				{
-					if (psmode_program() == 1)
+					if (1)// (fryer.bf.program_mode == 1)
 					{
-						fryer.bf.program_mode = 0;
-
-						if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+						if (psmode_program() == 1)
 						{
+							//fryer.bf.program_mode = 0;
+
+
+							//if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+							if (fryer.bf.preheating == 1)
+							{
+								fryer.viewmode = FRYER_VIEWMODE_PREHEATING;
+
+								//set kb
+								for (int i=0; i<BASKET_MAXSIZE; i++)
+								{
+									kbmode_default(&fryer.basket[i].kb);
+								}
+
+								lcdan_clear();
+								lcdan_set_cursor(0, 0);
+								lcdan_print_PSTRstring(PSTR("MELT"));
+							}
+							else
+							{
+								fryer.viewmode = FRYER_VIEWMODE_COOK;
+								for (int i=0; i<BASKET_MAXSIZE; i++)//added
+								{
+									kbmode_default(&fryer.basket[i].kb);
+									fryer.basket[i].kbmode = KBMODE_DEFAULT;
+								}
+							}
+
+						}
+					}
+				}
+
+				//added 7 ab 2022
+				if (fryer.viewmode == FRYER_VIEWMODE_VIEWCOOKTEMP) //if (fryer.bf.program_mode == 2)
+				{
+					if (psmode_viewTemp() == 1)
+					{
+						//fryer.bf.program_mode = 0;
+
+						//if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+						if (fryer.bf.preheating == 1)
+						{
+							fryer.viewmode = FRYER_VIEWMODE_PREHEATING;
+
 							//set kb
 							for (int i=0; i<BASKET_MAXSIZE; i++)
 							{
@@ -473,33 +539,23 @@ int main(void)
 							lcdan_set_cursor(0, 0);
 							lcdan_print_PSTRstring(PSTR("MELT"));
 						}
-					}
-				}
-				//added 7 ab 2022
-				if (fryer.bf.program_mode == 2)
-				{
-					if (psmode_program() == 1)
-					{
-						fryer.bf.program_mode = 0;
-
-						if (!fryer.bf.operative_mode)	//sigue en precalentamiento
+						else
 						{
-							//set kb
-							for (int i=0; i<BASKET_MAXSIZE; i++)
+							fryer.viewmode = FRYER_VIEWMODE_COOK;
+
+							for (int i=0; i<BASKET_MAXSIZE; i++)//added
 							{
 								kbmode_default(&fryer.basket[i].kb);
+								fryer.basket[i].kbmode = KBMODE_DEFAULT;
 							}
-
-							lcdan_clear();
-							lcdan_set_cursor(0, 0);
-							lcdan_print_PSTRstring(PSTR("MELT"));
 						}
 					}
 				}
 
 				//++++++++++++++++
-
-				if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
+				//if (fryer.viewmode == FRYER_VIEWMODE_COOK)
+				//if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
+				if (fryer.bf.operative_mode == 1)
 				{
 					psmode_operative();
 				}

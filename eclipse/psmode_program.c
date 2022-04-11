@@ -154,8 +154,8 @@ int8_t psmode_program(void)
 		else if (fryer.ps_program.sm0 == 5)//EXIT
 		{
 			codret = 1;
-			fryer.ps_program = ps_reset;
-			fryer.ps_operative = ps_reset;
+			//fryer.ps_program = ps_reset;
+			//fryer.ps_operative = ps_reset;
 
 			eeprom_update_block((struct _Tcoccion *)&tmprture_coccion , (struct _Tcoccion *)&TMPRTURE_COCCION, sizeof(struct _Tcoccion) );
 
