@@ -86,17 +86,9 @@ void psmode_operative_init(void)
 #define FRYER_COOKCYCLE_USER_STARTED 1
 #define FRYER_COOKCYCLE_USER_STOPPED 0
 
-void psmode_operative(void)
+void p1(void)
 {
 	char str[20];
-	//
-
-	if (fryer.ps_operative.sm0 == 0)
-	{
-		psmode_operative_init();
-		fryer.ps_operative.sm0++;
-	}
-
 	for (int i=0; i<BASKET_MAXSIZE; i++)
 	{
 		blink_set(&fryer.basket[i].blink);
@@ -284,7 +276,17 @@ void psmode_operative(void)
 			fryer.basket[i].kbmode = KBMODE_DEFAULT;
 		}
 
-		//
+
+	}
+}
+void p2(void)
+{
+
+	//process
+	for (int i=0; i<BASKET_MAXSIZE; i++)
+	{
+		blink_set(&fryer.basket[i].blink);
+
 		if (fryer.basket[i].cookCycle.bf.on == 1)
 		{
 			if (mainflag.sysTickMs)
@@ -320,14 +322,23 @@ void psmode_operative(void)
 						//
 						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
 						indicator_On();
-
-
 					}
 				}
 
 				fryer.basket[i].cookCycle.bf.forceCheckControl = 0x00;
 			}
 		}
+
+
+
+	}
+}
+void p3(void)
+{
+	char str[20];
+	for (int i=0; i<BASKET_MAXSIZE; i++)
+	{
+		blink_set(&fryer.basket[i].blink);
 
 		//print timing decrement mm:ss
 		//if (fryer.basket[i].display.owner == DISPLAY_TIMING)
@@ -356,50 +367,59 @@ void psmode_operative(void)
 				lcdan_print_string(str);
 			}
 		}
-		//
-		//+++++++++++++++++++++++++++++++++++++++++++++++++
-		//es necesario que este dentro del for() xq se cambia el puntero
-		//de la estructura correspondiente a cada canastilla
-		if (mainflag.sysTickMs)
-		{
-			blink_timing();
-		}
-		//+++++++++++++++++++++++++++++++++++++++++++++++++
-	}//endfor
-	//
-	//
-	if (ikb_getKeyStartPressed(KB_LYOUT_PROGRAM))
-	{
-		ikb_clearKeyStartPressed(KB_LYOUT_PROGRAM);
-		//
-		indicator_setKSysTickTime_ms(75/SYSTICK_MS);
-		indicator_On();
-	}
-	//
-//	if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
-//	{
-//		ikb_key_was_read(KB_LYOUT_PROGRAM);
-//
-//		if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
-//		{
-//			fryer.psmode = PSMODE_PROGRAM;
-//			fryer.ps_program = ps_reset;
-//			fryer.ps_operative = ps_reset;
-//			//
-//			struct _key_prop key_prop = { 0 };
-//			key_prop = propEmpty;
-//			key_prop.uFlag.f.onKeyPressed = 1;
-//
-//			//Salir actualizando eeprom
-//			for (int i=0; i<BASKET_MAXSIZE; i++)
-//			{
-//				COOKTIME[i] = basket_temp[i].cookCycle.time;//update new cookCycle set-point
-//				//
-//				ikb_setKeyProp(fryer.basket[i].kb.mode ,key_prop);//
-//			}
-//			indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-//			indicator_On();
-//		}
-//	}
 
+
+
+	}
+}
+
+void psmode_operative(void)
+{
+	if (fryer.ps_operative.sm0 == 0)
+	{
+		psmode_operative_init();
+		fryer.ps_operative.sm0++;
+	}
+
+
+	if (fryer.viewmode == FRYER_VIEWMODE_COOK)
+	{
+		p1();
+	}
+
+	p2();
+
+	if (fryer.viewmode == FRYER_VIEWMODE_COOK)
+	{
+		p3();
+	}
+
+	if (fryer.viewmode == FRYER_VIEWMODE_COOK)
+	{
+		for (int i=0; i<BASKET_MAXSIZE; i++)
+		{
+			blink_set(&fryer.basket[i].blink);
+			//
+			//+++++++++++++++++++++++++++++++++++++++++++++++++
+			//es necesario que este dentro del for() xq se cambia el puntero
+			//de la estructura correspondiente a cada canastilla
+			if (mainflag.sysTickMs)
+			{
+				blink_timing();
+			}
+			//+++++++++++++++++++++++++++++++++++++++++++++++++
+
+		}
+	}
+
+	if (fryer.viewmode == FRYER_VIEWMODE_COOK)
+	{
+		if (ikb_getKeyStartPressed(KB_LYOUT_PROGRAM))
+		{
+			ikb_clearKeyStartPressed(KB_LYOUT_PROGRAM);
+			//
+			indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+			indicator_On();
+		}
+	}
 }

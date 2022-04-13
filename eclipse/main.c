@@ -65,6 +65,12 @@ Pointers: nothing fancy here: GtkWidget *foo, TrackingOrder *bar.
 Global variables: just don't use global variables. They are evil.
 Functions that are there, but shouldn't be called directly, or have obscure uses, or whatever: one or more underscores at the beginning: _refrobnicate_data_tables(), _destroy_cache().
  */
+
+/*
+ * NOTAS:
+ * Por mejorar: Cambiar la blink para pasar un puntero a la estructura, asi ya no nos olvidamos
+ * de hacer direccionar correctamente de objeto al cambiar de procesos
+ */
 #include "main.h"
 #include "pinGetLevel/pinGetLevel.h"
 #include "igDeteccFlama.h"
@@ -446,8 +452,6 @@ int main(void)
 							{
 								//fryer.bf.program_mode = 1;
 								//
-								//fryer.ps_operative = ps_reset;
-
 								fryer.viewmode = FRYER_VIEWMODE_PROGRAM;
 								fryer.ps_program = ps_reset;
 								//
@@ -469,8 +473,6 @@ int main(void)
 								fryer.viewmode = FRYER_VIEWMODE_VIEWCOOKTEMP;
 								//
 								fryer.ps_viewTemp = ps_reset;
-								//fryer.ps_operative = ps_reset;
-								//fryer.ps_program = ps_reset;
 
 								indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
 								indicator_On();

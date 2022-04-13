@@ -7,13 +7,8 @@
 
 #include "main.h"
 #include "psmode_program.h"
-#include "psmode_operative.h"
 #include "Temperature/temperature.h"
 #include "indicator/indicator.h"
-
-//static struct _blink blink;
-//struct _pgrmmode pgrmode;
-
 
 int8_t psmode_viewTemp(void)
 {
@@ -60,14 +55,9 @@ int8_t psmode_viewTemp(void)
 	}
 	else if (fryer.ps_viewTemp.sm0 == 3)
 	{
-		fryer.ps_viewTemp.sm0 = 0;
-		//
 		if (fryer.ps_viewTemp.sm0 == 3)//EXIT
 		{
 			codret = 1;
-			fryer.ps_viewTemp = ps_reset;
-			fryer.ps_program = ps_reset;
-			fryer.ps_operative = ps_reset;
 		}
 	}
 

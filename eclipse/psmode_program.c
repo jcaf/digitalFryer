@@ -11,7 +11,7 @@
 #include "indicator/indicator.h"
 
 #define PSMODE_PROGRAM_BLINK_TIMER_KMAX (400/SYSTICK_MS)//Xms/10ms de acceso
-static struct _blink blink;
+
 
 struct _pgrmmode pgrmode;
 
@@ -25,10 +25,16 @@ struct _Tcoccion tmprture_coccion;
 
 int blinkIsActive=0;
 
+
+
 int8_t psmode_program(void)
 {
 	char codret = 0;
 	char str[10];
+	//
+	static struct _blink blink;
+	blink_set(&blink);
+	//
 
 	//fryer.ps_program.sm0 avanza por la tecla e internamente
 	if (fryer.ps_program.sm0 == 0)
@@ -43,6 +49,9 @@ int8_t psmode_program(void)
 		lcdan_clear();
 
 		fryer.ps_program.sm0++;
+		//
+		blink.timerBlink_K = PSMODE_PROGRAM_BLINK_TIMER_KMAX;
+
 	}
 	else if (fryer.ps_program.sm0 == 1)
 	{
@@ -147,8 +156,8 @@ int8_t psmode_program(void)
 		//
 		if (fryer.ps_program.sm0 == 3)
 		{
-			blink.timerBlink_K = PSMODE_PROGRAM_BLINK_TIMER_KMAX;
-			blink_set(&blink);
+			//blink.timerBlink_K = PSMODE_PROGRAM_BLINK_TIMER_KMAX;
+			//blink_set(&blink);
 			blinkIsActive = 1;
 		}
 		else if (fryer.ps_program.sm0 == 5)//EXIT
