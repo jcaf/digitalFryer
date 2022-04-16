@@ -304,6 +304,19 @@ int main(void)
 	mypid0_set();	/* Once*/
 
 	//kbmode_2basket_set_default();
+//++++++++++++++++++++++++
+
+//	char lcdanBuff[LCDAN_ROW][LCDAN_COL];
+//	//
+//	lcdanBuff_clear(lcdanBuff);
+//	lcdanBuff_print_string(0, 0, lcdanBuff, "123456789");
+//	lcdanBuff_print_string(0, 1, lcdanBuff, "KATTY");
+//	lcdanBuff_dump2device(lcdanBuff);
+//	lcdanBuff_clear(lcdanBuff);
+//	lcdanBuff_print_string(10, 0, lcdanBuff, "ABCDEFEJGIO");
+//	lcdanBuff_print_string(14, 1, lcdanBuff, "HIJITALI");
+//	lcdanBuff_dump2device(lcdanBuff);
+//	while (1);
 
 	while (1)
 	{

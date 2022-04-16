@@ -139,77 +139,93 @@ void lcdan_str_lineformat_trimEOL3dots(char *str)
 }
 
 
+
+
 //+++++++++++++++++++++++++++++++++++++
-char lcdanBuff[LCDAN_COL,LCDAN_ROW];
-int8_t col,row;
+//char lcdanBuff[LCDAN_COL,LCDAN_ROW];
+//int8_t col,row;
 /*
 */
-void lcdanBuff_clear(void)
+
+
+void lcdanBuff_clear(char str_dest[LCDAN_ROW][LCDAN_COL])
 {
 	for (int r=0; r<LCDAN_ROW; r++)
 	{
 		for (int c=0; c<LCDAN_COL; c++)
 		{
-			lcdanBuff[c,r]=' ';
+			str_dest[r][c]=' ';
 		}
 	}
 }
 /*
 */
-void lcdanBuff_set_cursor(int8_t c, int8_t r)
-{
-	col = c;
-	row = r;
-}
-void lcdanBuff_print_string(int8_t x, int8_t y, char * str_dest, const char * str_src)
+//void lcdanBuff_set_cursor(int8_t c, int8_t r)
+//{
+//	col = c;
+//	row = r;
+//}
+/*
+void lcdanBuff_print_string(int8_t col, char * str_dest, const char * str_src)
 {
 	int8_t i=0;
 	while (str_src[i] != '\0')
 	{
-		if ( x >= LCDAN_COL)
+		if ( col >= LCDAN_COL)
 		{
 			//str_dest[LCDAN_COL]	= '\0';
 			break;
 		}
 		else
 		{
-			str_dest[x] = str_scr[i];
+			str_dest[col] = str_src[i];
 		}
-		x++;
+		col++;
 		i++;
 	}
-
-
 }
-void lcdanBuff_dump(void)
+*/
+void lcdanBuff_print_string(int8_t col, int8_t row, char str_dest[LCDAN_ROW][LCDAN_COL], const char * str_src)
 {
-	lcdan_write_cmd(LCDAN_BASEADDR_ROW_0);
-	lcd_print_string(lcdanBuff[0][0]);
-	lcdan_write_cmd(LCDAN_BASEADDR_ROW_1);
-	lcd_print_string(lcdanBuff[0][1]);
+	int8_t i=0;
+
+	if (row>=LCDAN_ROW)
+		row = (LCDAN_ROW-1);
+
+	while (str_src[i] != '\0')
+	{
+		if ( col >= LCDAN_COL)
+		{
+			//str_dest[LCDAN_COL]	= '\0';
+			break;
+		}
+		else
+		{
+			str_dest[row][col] = str_src[i];
+		}
+		col++;
+		i++;
+	}
 }
 
-//ojo trunca al tamano de columnas imprimibles en LCD alfanu..
-//CONDITION: strlen(str_dest) >= LCDAN_STR_MAXSIZE
-////////////////////////////////////////////////////////////////////////////////
-void lcdan_str_lineformat_align(char *str_dest,  const char *str_src, int8_t pos_i /* = 0 */)
+void lcdanBuff_dump2device(const char str_src[LCDAN_ROW][LCDAN_COL])
 {
-    int8_t i, pos_f, x;
+	const uint8_t lcdan_address_4row[4]=
+	{
+			LCDAN_BASEADDR_ROW_0,
+			LCDAN_BASEADDR_ROW_1,
+			LCDAN_BASEADDR_ROW_2,
+			LCDAN_BASEADDR_ROW_3,
+	};
 
-    str_dest[LCDAN_STR_MAXSIZE-1] = '\0';         //[''   ...''0] posc[20]='\0'
-
-    for (i = LCDAN_STR_MAXSIZE-2; i >= 0; i--)    //blank all elements
-        str_dest[i] = ' ';
-
-    if (pos_i < 0)
-        pos_i = lcdan_str_get_align_col(str_src, LCDAN_STR_FORMAT_ALIGN_CENTER);
-
-    pos_f = pos_i + strlen(str_src);
-
-    if (pos_f > LCDAN_COL)
-        pos_f = LCDAN_COL;//trunc to max pos= LCD_COL
-
-    x = 0;
-    for (i = pos_i; i < pos_f; i++, x++)
-        str_dest[i] = str_src[x];
+	for (int8_t r=0; r<LCDAN_ROW; r++)
+	{
+		lcdan_write_cmd(lcdan_address_4row[r]);//set cursor
+		for (int8_t c=0; c<LCDAN_COL; c++)
+		{
+			lcdan_write_data(str_src[r][c]);
+		}
+	}
 }
+
+

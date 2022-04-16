@@ -32,6 +32,12 @@ uint8_t lcdan_str_get_align_col(const char *str_src, int8_t col_align);
 int8_t lcdan_str_get_center_hor(const char *str);
 //--+
 
+
+void lcdanBuff_clear(char str_dest[LCDAN_ROW][LCDAN_COL]);
+//void lcdanBuff_print_string(int8_t x, int8_t y, char * str_dest, const char * str_src);
+void lcdanBuff_print_string(int8_t col, int8_t row, char str_dest[LCDAN_ROW][LCDAN_COL], const char * str_src);
+void lcdanBuff_dump2device(const char str_src[LCDAN_ROW][LCDAN_COL]);
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
