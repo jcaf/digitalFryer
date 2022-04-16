@@ -20,7 +20,7 @@ struct _indicator
 		int8_t pin;
 };
 
-extern struct _indicator indicator;
+volatile extern struct _indicator indicator;
 
 	void indicator_setPortPin(volatile unsigned char *Port8bits, int8_t pin);
 	#ifdef TIMEON_TIMEOFF_SEPARADOS

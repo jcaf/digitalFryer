@@ -425,30 +425,32 @@ int main(void)
 				{
 					//Precalentamiento
 					//if (TCtemperature >= mypid0.algo.sp)
-					if (TCtemperature >= tmprture_coccion.TC)
-					{
-						//
-						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-						indicator_On();
-						//
-						fryer.bf.preheating = 0;
-						fryer.viewmode = FRYER_VIEWMODE_COOK;
-						//
-						for (int i=0; i<BASKET_MAXSIZE; i++)//added
-						{
-							kbmode_default(&fryer.basket[i].kb);
-							fryer.basket[i].kbmode = KBMODE_DEFAULT;
-						}
-						//
-						fryer.bf.operative_mode = 1;
-						//
 
-						sm0++;
+					if (fryer.viewmode == FRYER_VIEWMODE_PREHEATING)
+					{
+						if (TCtemperature >= tmprture_coccion.TC)
+						{
+							//
+							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+							indicator_On();
+							//
+							fryer.bf.preheating = 0;
+
+							fryer.viewmode = FRYER_VIEWMODE_COOK;
+							for (int i=0; i<BASKET_MAXSIZE; i++)//added
+							{
+								kbmode_default(&fryer.basket[i].kb);
+								fryer.basket[i].kbmode = KBMODE_DEFAULT;
+							}
+							fryer.bf.operative_mode = 1;
+							//
+
+							sm0++;
+						}
 					}
 				}
 				else if (sm0 == 4)
 				{
-
 				}
 
 				if ((fryer.viewmode == FRYER_VIEWMODE_PREHEATING) || (fryer.viewmode == FRYER_VIEWMODE_COOK))
@@ -510,6 +512,8 @@ int main(void)
 								kbmode_default(&fryer.basket[i].kb);
 								fryer.basket[i].kbmode = KBMODE_DEFAULT;
 							}
+							//added
+							lcdanBuff_dump2device(lcdanBuff);
 						}
 
 					}
@@ -543,6 +547,8 @@ int main(void)
 								kbmode_default(&fryer.basket[i].kb);
 								fryer.basket[i].kbmode = KBMODE_DEFAULT;
 							}
+							//added
+							lcdanBuff_dump2device(lcdanBuff);
 						}
 					}
 				}

@@ -7,7 +7,7 @@
 #include "../main.h"
 #include "indicator.h"
 
-struct _indicator indicator;
+volatile struct _indicator indicator;
 void indicator_setPortPin(volatile unsigned char *Port8bits, int8_t pin)
 {
 	indicator.Port8bits = Port8bits;
@@ -49,7 +49,7 @@ void indicator_job(void)
 	if (indicator.sm0 == 1)
 	{
 		PinTo1(*indicator.Port8bits, indicator.pin);
-		indicator.counter0 = 0x00;
+		indicator.counter0 = 0;
 		indicator.sm0++;
 	}
 	else if (indicator.sm0 == 2)
@@ -62,6 +62,8 @@ void indicator_job(void)
 			}
 		}
 	}
+
+
 	//Cycle, stop by user
 	if (indicator.sm0 == 3)
 	{
