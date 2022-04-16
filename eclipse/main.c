@@ -418,8 +418,6 @@ int main(void)
 						indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
 						indicator_On();
 						//
-						//fryer.bf.operative_mode = 1;
-						//
 						fryer.bf.preheating = 0;
 						fryer.viewmode = FRYER_VIEWMODE_COOK;
 						//
@@ -442,92 +440,74 @@ int main(void)
 
 				if ((fryer.viewmode == FRYER_VIEWMODE_PREHEATING) || (fryer.viewmode == FRYER_VIEWMODE_COOK))
 				{
-					if (1)//if (fryer.bf.program_mode == 0)//se autoexcluye
+					if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
 					{
-						if (ikb_key_is_ready2read(KB_LYOUT_PROGRAM))
+						ikb_key_was_read(KB_LYOUT_PROGRAM);
+
+						if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
 						{
-							ikb_key_was_read(KB_LYOUT_PROGRAM);
+							fryer.viewmode = FRYER_VIEWMODE_PROGRAM;
+							fryer.ps_program = ps_reset;
 
-							if ( ikb_get_AtTimeExpired_BeforeOrAfter(KB_LYOUT_PROGRAM) == KB_AFTER_THR)
+							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+							indicator_On();
+
+							//Salir actualizando eeprom
+							for (int i=0; i<BASKET_MAXSIZE; i++)
 							{
-								//fryer.bf.program_mode = 1;
-								//
-								fryer.viewmode = FRYER_VIEWMODE_PROGRAM;
-								fryer.ps_program = ps_reset;
-								//
-
-								indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-								indicator_On();
-
-								//Salir actualizando eeprom
-								for (int i=0; i<BASKET_MAXSIZE; i++)
-								{
-									eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
-								}
-								//
+								eeprom_update_block( (struct _t *)(&basket_temp[i].cookCycle.time), (struct _t *)(&COOKTIME[i]), sizeof(struct _t));
 							}
-							//added 7 abr 2022
-							else//KB_BEFORE_THR
-							{
-								/* Visualizar la temperatura */
-								fryer.viewmode = FRYER_VIEWMODE_VIEWCOOKTEMP;
-								//
-								fryer.ps_viewTemp = ps_reset;
+						}
+						//added 7 abr 2022
+						else//KB_BEFORE_THR
+						{
+							/* Visualizar la temperatura */
+							fryer.viewmode = FRYER_VIEWMODE_VIEWCOOKTEMP;
+							fryer.ps_viewTemp = ps_reset;
 
-								indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
-								indicator_On();
-							}
+							indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+							indicator_On();
 						}
 					}
 				}
 				//
 				if (fryer.viewmode == FRYER_VIEWMODE_PROGRAM)
 				{
-					if (1)// (fryer.bf.program_mode == 1)
+					if (psmode_program() == 1)
 					{
-						if (psmode_program() == 1)
+						if (fryer.bf.preheating == 1)//sigue en precalentamiento ?
 						{
-							//fryer.bf.program_mode = 0;
+							fryer.viewmode = FRYER_VIEWMODE_PREHEATING;
 
-
-							//if (!fryer.bf.operative_mode)	//sigue en precalentamiento
-							if (fryer.bf.preheating == 1)
+							//set kb
+							for (int i=0; i<BASKET_MAXSIZE; i++)
 							{
-								fryer.viewmode = FRYER_VIEWMODE_PREHEATING;
-
-								//set kb
-								for (int i=0; i<BASKET_MAXSIZE; i++)
-								{
-									kbmode_default(&fryer.basket[i].kb);
-								}
-
-								lcdan_clear();
-								lcdan_set_cursor(0, 0);
-								lcdan_print_PSTRstring(PSTR("MELT"));
-							}
-							else
-							{
-								fryer.viewmode = FRYER_VIEWMODE_COOK;
-								for (int i=0; i<BASKET_MAXSIZE; i++)//added
-								{
-									kbmode_default(&fryer.basket[i].kb);
-									fryer.basket[i].kbmode = KBMODE_DEFAULT;
-								}
+								kbmode_default(&fryer.basket[i].kb);
 							}
 
+							lcdan_clear();
+							lcdan_set_cursor(0, 0);
+							lcdan_print_PSTRstring(PSTR("MELT"));
 						}
+						else
+						{
+							fryer.viewmode = FRYER_VIEWMODE_COOK;
+							for (int i=0; i<BASKET_MAXSIZE; i++)//added
+							{
+								kbmode_default(&fryer.basket[i].kb);
+								fryer.basket[i].kbmode = KBMODE_DEFAULT;
+							}
+						}
+
 					}
 				}
 
 				//added 7 ab 2022
-				if (fryer.viewmode == FRYER_VIEWMODE_VIEWCOOKTEMP) //if (fryer.bf.program_mode == 2)
+				if (fryer.viewmode == FRYER_VIEWMODE_VIEWCOOKTEMP)
 				{
 					if (psmode_viewTemp() == 1)
 					{
-						//fryer.bf.program_mode = 0;
-
-						//if (!fryer.bf.operative_mode)	//sigue en precalentamiento
-						if (fryer.bf.preheating == 1)
+						if (fryer.bf.preheating == 1)	//sigue en precalentamiento
 						{
 							fryer.viewmode = FRYER_VIEWMODE_PREHEATING;
 
@@ -554,9 +534,6 @@ int main(void)
 					}
 				}
 
-				//++++++++++++++++
-				//if (fryer.viewmode == FRYER_VIEWMODE_COOK)
-				//if ( (fryer.bf.operative_mode == 1) && (!fryer.bf.program_mode))
 				if (fryer.bf.operative_mode == 1)
 				{
 					psmode_operative();

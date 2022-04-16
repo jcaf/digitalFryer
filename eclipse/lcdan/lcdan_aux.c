@@ -42,6 +42,8 @@ void lcdan_print_PSTRstring(const char *p)
 
 //x = col
 //y = row
+
+
 void lcdan_set_cursor(int8_t x, int8_t y)
 {
     int8_t xy = LCDAN_BASEADDR_ROW_0;
@@ -137,3 +139,77 @@ void lcdan_str_lineformat_trimEOL3dots(char *str)
 }
 
 
+//+++++++++++++++++++++++++++++++++++++
+char lcdanBuff[LCDAN_COL,LCDAN_ROW];
+int8_t col,row;
+/*
+*/
+void lcdanBuff_clear(void)
+{
+	for (int r=0; r<LCDAN_ROW; r++)
+	{
+		for (int c=0; c<LCDAN_COL; c++)
+		{
+			lcdanBuff[c,r]=' ';
+		}
+	}
+}
+/*
+*/
+void lcdanBuff_set_cursor(int8_t c, int8_t r)
+{
+	col = c;
+	row = r;
+}
+void lcdanBuff_print_string(int8_t x, int8_t y, char * str_dest, const char * str_src)
+{
+	int8_t i=0;
+	while (str_src[i] != '\0')
+	{
+		if ( x >= LCDAN_COL)
+		{
+			//str_dest[LCDAN_COL]	= '\0';
+			break;
+		}
+		else
+		{
+			str_dest[x] = str_scr[i];
+		}
+		x++;
+		i++;
+	}
+
+
+}
+void lcdanBuff_dump(void)
+{
+	lcdan_write_cmd(LCDAN_BASEADDR_ROW_0);
+	lcd_print_string(lcdanBuff[0][0]);
+	lcdan_write_cmd(LCDAN_BASEADDR_ROW_1);
+	lcd_print_string(lcdanBuff[0][1]);
+}
+
+//ojo trunca al tamano de columnas imprimibles en LCD alfanu..
+//CONDITION: strlen(str_dest) >= LCDAN_STR_MAXSIZE
+////////////////////////////////////////////////////////////////////////////////
+void lcdan_str_lineformat_align(char *str_dest,  const char *str_src, int8_t pos_i /* = 0 */)
+{
+    int8_t i, pos_f, x;
+
+    str_dest[LCDAN_STR_MAXSIZE-1] = '\0';         //[''   ...''0] posc[20]='\0'
+
+    for (i = LCDAN_STR_MAXSIZE-2; i >= 0; i--)    //blank all elements
+        str_dest[i] = ' ';
+
+    if (pos_i < 0)
+        pos_i = lcdan_str_get_align_col(str_src, LCDAN_STR_FORMAT_ALIGN_CENTER);
+
+    pos_f = pos_i + strlen(str_src);
+
+    if (pos_f > LCDAN_COL)
+        pos_f = LCDAN_COL;//trunc to max pos= LCD_COL
+
+    x = 0;
+    for (i = pos_i; i < pos_f; i++, x++)
+        str_dest[i] = str_src[x];
+}

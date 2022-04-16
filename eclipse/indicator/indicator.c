@@ -49,7 +49,7 @@ void indicator_job(void)
 	if (indicator.sm0 == 1)
 	{
 		PinTo1(*indicator.Port8bits, indicator.pin);
-		indicator.counter0 = 0;
+		indicator.counter0 = 0x00;
 		indicator.sm0++;
 	}
 	else if (indicator.sm0 == 2)
