@@ -99,7 +99,7 @@ void p1(void)
 	{
 		blink_set(&fryer.basket[i].blink);
 
-		if ((ikb_key_is_ready2read(fryer.basket[i].kb.down)) && (fryer.basket[i].cookCycle.bf.blinkDone == 0))
+		if ((ikb_key_is_ready2read(fryer.basket[i].kb.down)) && (fryer.basket[i].cookCycle.bf.blinkDone == 0) && (fryer.basket[i].cookCycle.bf.on == 0))
 		{
 			//ikb_key_was_read(fryer.basket[i].kb.down);
 			if (!ikb_inReptt(fryer.basket[i].kb.down))
@@ -120,7 +120,7 @@ void p1(void)
 
 			time_dec(&basket_temp[i].cookCycle.time);
 		}
-		if ((ikb_key_is_ready2read(fryer.basket[i].kb.up))  && (fryer.basket[i].cookCycle.bf.blinkDone == 0))
+		if ((ikb_key_is_ready2read(fryer.basket[i].kb.up))  && (fryer.basket[i].cookCycle.bf.blinkDone == 0) && (fryer.basket[i].cookCycle.bf.on == 0))
 		{
 			//ikb_key_was_read(fryer.basket[i].kb.up);
 			if (!ikb_inReptt(fryer.basket[i].kb.up))
