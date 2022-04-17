@@ -8,6 +8,7 @@
 #include "indicator.h"
 
 volatile struct _indicator indicator;
+
 void indicator_setPortPin(volatile unsigned char *Port8bits, int8_t pin)
 {
 	indicator.Port8bits = Port8bits;
@@ -56,8 +57,10 @@ void indicator_job(void)
 	{
 		if (mainflag.sysTickMs)
 		{
-			if (++indicator.counter0 >= indicator.KOn_MAX)
+			indicator.counter0++;
+			if (indicator.counter0 >= indicator.KOn_MAX)
 			{
+				indicator.counter0 = 0;
 				indicator_Off();
 			}
 		}

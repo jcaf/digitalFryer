@@ -168,7 +168,7 @@ int8_t psmode_program(void)
 
 			blinkIsActive = 0;
 		}
-		indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+		indicator_setKSysTickTime_ms(80/SYSTICK_MS);
 		indicator_On();
 	}
 	//

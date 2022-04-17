@@ -109,7 +109,6 @@ void p1(void)
 			}
 
 			//
-			//
 			fryer.basket[i].display.bf.print_cookCycle = 0;
 			//fryer.basket[i].bf.user_startStop = FRYER_COOKCYCLE_USER_STOPPED;//preserva el estado actual si esta corriendo el temporizador o no
 			fryer.basket[i].cookCycle.editcycle.bf.blinkIsActive = 1;
@@ -198,6 +197,11 @@ void p1(void)
 			if (ikb_key_is_ready2read(fryer.basket[i].kb.startStop ) )
 			{
 				ikb_key_was_read(fryer.basket[i].kb.startStop);
+
+				//
+				indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+				indicator_On();
+
 				//
 				fryer.basket[i].bf.prepareReturnToKBDefault = 1;
 				fryer.basket[i].bf.user_startStop = FRYER_COOKCYCLE_USER_STARTED;

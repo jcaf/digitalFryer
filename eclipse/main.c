@@ -222,6 +222,48 @@ void fryer_init(void)
 	//--++
 }
 
+void ind(void)
+{
+
+	int8_t c=0;
+	int8_t i=0;
+	while (1)
+	{
+		if (isr_flag.sysTickMs)
+		{
+			isr_flag.sysTickMs = 0;
+			mainflag.sysTickMs = 1;
+		}
+		if (mainflag.sysTickMs)
+		{
+			if (++c == (20/SYSTICK_MS))    //20ms
+			{
+				c = 0;
+
+				ikb_job();
+			}
+		}
+
+
+
+		if (ikb_key_is_ready2read(fryer.basket[i].kb.down))
+		{
+			ikb_key_was_read(fryer.basket[i].kb.down);
+
+			indicator_setKSysTickTime_ms(1000/SYSTICK_MS);
+			indicator_On();
+		}
+		if (ikb_key_is_ready2read(fryer.basket[i].kb.up))
+		{
+			ikb_key_was_read(fryer.basket[i].kb.up);
+			indicator_setKSysTickTime_ms(75/SYSTICK_MS);
+			indicator_On();
+		}
+		indicator_job();
+		mainflag.sysTickMs = 0;
+	}
+}
+
 int main(void)
 {
 	int8_t sm0 = 0;
@@ -306,18 +348,7 @@ int main(void)
 	//kbmode_2basket_set_default();
 //++++++++++++++++++++++++
 
-//	char lcdanBuff[LCDAN_ROW][LCDAN_COL];
-//	//
-//	lcdanBuff_clear(lcdanBuff);
-//	lcdanBuff_print_string(0, 0, lcdanBuff, "123456789");
-//	lcdanBuff_print_string(0, 1, lcdanBuff, "KATTY");
-//	lcdanBuff_dump2device(lcdanBuff);
-//	lcdanBuff_clear(lcdanBuff);
-//	lcdanBuff_print_string(10, 0, lcdanBuff, "ABCDEFEJGIO");
-//	lcdanBuff_print_string(14, 1, lcdanBuff, "HIJITALI");
-//	lcdanBuff_dump2device(lcdanBuff);
-//	while (1);
-
+	//ind();
 	while (1)
 	{
 		if (isr_flag.sysTickMs)
