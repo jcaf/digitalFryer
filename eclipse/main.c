@@ -1,4 +1,5 @@
 /*
+ * STABLE VERSION @31 DEC 2022
  Programmer USBasp, fix permissions:
  https://andreasrohner.at/posts/Electronics/How-to-fix-device-permissions-for-the-USBasp-programmer/
  Permanent Solution
@@ -70,6 +71,10 @@ Functions that are there, but shouldn't be called directly, or have obscure uses
  * NOTAS:
  * Por mejorar: Cambiar la blink para pasar un puntero a la estructura, asi ya no nos olvidamos
  * de hacer direccionar correctamente de objeto al cambiar de procesos
+ */
+
+/*
+ *1ra version entregable a Ronald 16/04/2022
  */
 #include "main.h"
 #include "pinGetLevel/pinGetLevel.h"
